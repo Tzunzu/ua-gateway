@@ -13,6 +13,13 @@ echo "3. Relevant docs updated (architecture, ops, testing, roadmap)"
 echo "4. New behavior has tests or explicit justification"
 echo ""
 echo "Checklist reference: docs/PUSH_CHECKLIST.md"
+
+if [ ! -t 0 ]; then
+  echo "Non-interactive push blocked by checklist reminder."
+  echo "Review docs/PUSH_CHECKLIST.md, then rerun with SKIP_PUSH_CHECK=1 if everything is complete."
+  exit 1
+fi
+
 printf "Continue with push? [y/N]: "
 read answer
 
