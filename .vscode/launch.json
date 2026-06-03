@@ -23,5 +23,16 @@
       "console": "integratedTerminal",
       "stopAtEntry": false
     }
+  ],
+  "compounds": [
+    {
+      "name": "Debug UAGateway Service + UI",
+      "configurations": [
+        "Launch UAGateway Service",
+        "Launch UAGateway UI"
+      ],
+      "preLaunchTask": "Build UAGateway",
+      "stopAll": true
+    }
   ]
 }

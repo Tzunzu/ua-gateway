@@ -4,6 +4,8 @@
 
 Scaffold and foundation. Build and test are running. Runtime bootstrap is minimal.
 
+Next stage: second-pass implementation. The baseline milestone work should now be hardened into a real V1-quality implementation with explicit runtime verification, failure-path handling, and regression coverage.
+
 ## Near-Term Milestones
 
 1. Tooling and debug foundation
@@ -33,6 +35,7 @@ Scaffold and foundation. Build and test are running. Runtime bootstrap is minima
 6. Service/UI Contract
 - Define initial API/IPC contract for status and config
 - Implement safe apply/reload workflow
+- Draft contract and phased rollout are tracked in SERVICE_UI_IPC_CONTRACT_DRAFT.md
 
 ## Release Readiness Themes
 
@@ -40,3 +43,18 @@ Scaffold and foundation. Build and test are running. Runtime bootstrap is minima
 - Operational diagnostics and logging quality
 - Test coverage for mapping and connection lifecycle
 - Documentation quality for contributors and operators
+
+## Second-Pass Direction
+
+1. UI structure first
+- Lock the WinUI shell, layout, navigation, and operator workflows early.
+- Use the UI pass to clarify goals, state boundaries, and missing service contracts.
+
+2. Reliability hardening immediately after UI structure
+- Revisit runtime bootstrap, certificate/trust handling, connection lifecycle, and local server behavior.
+- Treat scaffold implementations as incomplete until failure paths and recovery paths are verified.
+
+3. Mapping, projection, and release baseline
+- Harden mapping and projection refresh behavior.
+- Expand regression tests and intentional publish workflows.
+- Align docs with actual implementation and troubleshooting practice.

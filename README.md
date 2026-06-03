@@ -38,6 +38,8 @@ For continuing this project on another computer or session, start with:
 - [V1 scope contract](docs/V1_SCOPE.md)
 - [Priorities](docs/PRIORITIES.md)
 - [Tooling, debug, and event plan](docs/TOOLING_DEBUG_EVENT_PLAN.md)
+- [Testing guidelines](docs/TESTING_GUIDELINES.md)
+- [Service integration testing guide](docs/SERVICE_INTEGRATION_TESTING_GUIDE.md)
 - [Debug runbook](docs/DEBUG_RUNBOOK.md)
 - [Operations and developer guide](docs/OPERATIONS_AND_DEV_GUIDE.md)
 - [Implementation tracker](docs/IMPLEMENTATION_TRACKER.md)

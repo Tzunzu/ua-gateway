@@ -27,8 +27,11 @@ internal static class Program
         host.Services.AddSerilog(Log.Logger, dispose: true);
         host.Services.AddWindowsService();
         host.Services.AddSingleton<StartupHealthState>();
+        host.Services.AddSingleton<IpcEventStreamBroker>();
         host.Services.AddSingleton<UpstreamConnectionLifecycleManager>();
         host.Services.AddSingleton<OpcUaBootstrapper>();
+        host.Services.AddHostedService<IpcControlServerHostedService>();
+        host.Services.AddHostedService<IpcEventServerHostedService>();
         host.Services.AddHostedService<GatewayWorker>();
 
         try

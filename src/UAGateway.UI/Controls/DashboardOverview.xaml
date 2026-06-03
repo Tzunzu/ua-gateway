@@ -1,0 +1,62 @@
+<UserControl
+    x:Class="UAGateway.UI.Controls.DashboardOverview"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+    <ScrollViewer>
+        <StackPanel Padding="12"
+                    Spacing="12">
+            <Border Padding="12"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Service Startup"
+                               FontWeight="SemiBold" />
+                    <TextBlock x:Name="StartupStatusText" />
+                    <TextBlock x:Name="StartupReasonText"
+                               TextWrapping="WrapWholeWords" />
+                    <TextBlock x:Name="StartupUpdatedText"
+                               Opacity="0.75" />
+                </StackPanel>
+            </Border>
+
+            <Border Padding="12"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Security Bootstrap"
+                               FontWeight="SemiBold" />
+                    <TextBlock x:Name="SecurityStatusText" />
+                    <TextBlock x:Name="SecurityReasonText"
+                               TextWrapping="WrapWholeWords" />
+                    <TextBlock x:Name="SecurityCountsText" />
+                    <TextBlock x:Name="SecurityThumbprintText"
+                               TextWrapping="WrapWholeWords" />
+                    <TextBlock x:Name="SecurityUpdatedText"
+                               Opacity="0.75" />
+                </StackPanel>
+            </Border>
+
+            <Border Padding="12"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Connection Lifecycle"
+                               FontWeight="SemiBold" />
+                    <TextBlock x:Name="ConnectionSummaryText" />
+                    <TextBlock x:Name="ConnectionStateText" />
+                    <TextBlock x:Name="ConnectionUpdatedText"
+                               Opacity="0.75" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

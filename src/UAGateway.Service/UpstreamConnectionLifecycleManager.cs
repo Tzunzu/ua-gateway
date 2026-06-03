@@ -3,6 +3,7 @@ using Opc.Ua;
 using Opc.Ua.Client;
 using UAGateway.Core.Configuration;
 using UAGateway.Core.Diagnostics;
+using UAGateway.Core.Ipc;
 
 namespace UAGateway.Service;
 
@@ -10,14 +11,18 @@ internal sealed class UpstreamConnectionLifecycleManager
 {
     private readonly ILogger<UpstreamConnectionLifecycleManager> _logger;
     private readonly ITelemetryContext _telemetryContext;
+    private readonly IpcEventStreamBroker _eventStreamBroker;
     private readonly object _sync = new();
     private readonly Dictionary<string, EndpointRuntimeState> _runtimeByEndpointId = new(StringComparer.OrdinalIgnoreCase);
     private ApplicationConfiguration? _applicationConfiguration;
 
-    public UpstreamConnectionLifecycleManager(ILogger<UpstreamConnectionLifecycleManager> logger)
+    public UpstreamConnectionLifecycleManager(
+        ILogger<UpstreamConnectionLifecycleManager> logger,
+        IpcEventStreamBroker eventStreamBroker)
     {
         _logger = logger;
         _telemetryContext = DefaultTelemetry.Create(_ => { });
+        _eventStreamBroker = eventStreamBroker;
     }
 
     public int EnabledEndpointCount
@@ -28,6 +33,22 @@ internal sealed class UpstreamConnectionLifecycleManager
             {
                 return _runtimeByEndpointId.Values.Count(state => state.Enabled);
             }
+        }
+    }
+
+    public ConnectionLifecycleDiagnosticsSnapshot GetSnapshot(DateTimeOffset nowUtc)
+    {
+        lock (_sync)
+        {
+            var allStates = _runtimeByEndpointId.Values.ToList();
+
+            return new ConnectionLifecycleDiagnosticsSnapshot(
+                nowUtc,
+                allStates.Count(state => state.Enabled),
+                allStates.Count(state => state.Enabled && string.Equals(state.State, "Connected", StringComparison.Ordinal)),
+                allStates.Count(state => state.Enabled && string.Equals(state.State, "Connecting", StringComparison.Ordinal)),
+                allStates.Count(state => state.Enabled && string.Equals(state.State, "Disconnected", StringComparison.Ordinal)),
+                allStates.Sum(state => state.FailureCount));
         }
     }
 
@@ -61,6 +82,13 @@ internal sealed class UpstreamConnectionLifecycleManager
                 runtime.EndpointUrl = endpoint.EndpointUrl;
                 runtime.Enabled = endpoint.Enabled;
             }
+
+            _eventStreamBroker.Publish(
+                category: IpcEventCategories.ConnectionLifecycle,
+                name: nameof(UAGatewayEventIds.ConnectionLifecycle.UpstreamEndpointsConfigured),
+                severity: IpcEventSeverity.Information,
+                serviceEventId: UAGatewayEventIds.ConnectionLifecycle.UpstreamEndpointsConfigured,
+                message: $"Upstream endpoints configured. Enabled={_runtimeByEndpointId.Values.Count(state => state.Enabled)}");
         }
     }
 
@@ -84,6 +112,14 @@ internal sealed class UpstreamConnectionLifecycleManager
 
             var correlationId = Guid.NewGuid().ToString("N");
             GatewayLogMessages.ConnectionAttemptStarted(_logger, endpoint.EndpointId, endpoint.EndpointUrl, correlationId);
+            _eventStreamBroker.Publish(
+                category: IpcEventCategories.ConnectionLifecycle,
+                name: nameof(UAGatewayEventIds.ConnectionLifecycle.ConnectionAttemptStarted),
+                severity: IpcEventSeverity.Information,
+                serviceEventId: UAGatewayEventIds.ConnectionLifecycle.ConnectionAttemptStarted,
+                message: $"Connection attempt started for {endpoint.EndpointUrl}",
+                endpointId: endpoint.EndpointId,
+                correlationId: correlationId);
             UpdateState(endpoint, "Connecting");
 
             try
@@ -98,6 +134,14 @@ internal sealed class UpstreamConnectionLifecycleManager
 
                 UpdateState(endpoint, "Connected");
                 GatewayLogMessages.ConnectionAttemptSucceeded(_logger, endpoint.EndpointId, endpoint.EndpointUrl);
+                _eventStreamBroker.Publish(
+                    category: IpcEventCategories.ConnectionLifecycle,
+                    name: nameof(UAGatewayEventIds.ConnectionLifecycle.ConnectionAttemptSucceeded),
+                    severity: IpcEventSeverity.Information,
+                    serviceEventId: UAGatewayEventIds.ConnectionLifecycle.ConnectionAttemptSucceeded,
+                    message: $"Connection attempt succeeded for {endpoint.EndpointUrl}",
+                    endpointId: endpoint.EndpointId,
+                    correlationId: correlationId);
             }
             catch (Exception ex)
             {
@@ -113,6 +157,16 @@ internal sealed class UpstreamConnectionLifecycleManager
                     endpoint.FailureCount,
                     endpoint.NextAttemptUtc,
                     ex.Message);
+
+                _eventStreamBroker.Publish(
+                    category: IpcEventCategories.ConnectionLifecycle,
+                    name: nameof(UAGatewayEventIds.ConnectionLifecycle.ConnectionAttemptFailed),
+                    severity: IpcEventSeverity.Warning,
+                    serviceEventId: UAGatewayEventIds.ConnectionLifecycle.ConnectionAttemptFailed,
+                    message: $"Connection attempt failed for {endpoint.EndpointUrl}",
+                    endpointId: endpoint.EndpointId,
+                    detail: ex.Message,
+                    correlationId: correlationId);
             }
         }
 
@@ -128,6 +182,13 @@ internal sealed class UpstreamConnectionLifecycleManager
 
         endpoint.State = nextState;
         GatewayLogMessages.ConnectionStateChanged(_logger, endpoint.EndpointId, nextState);
+        _eventStreamBroker.Publish(
+            category: IpcEventCategories.ConnectionLifecycle,
+            name: nameof(UAGatewayEventIds.ConnectionLifecycle.ConnectionStateChanged),
+            severity: IpcEventSeverity.Information,
+            serviceEventId: UAGatewayEventIds.ConnectionLifecycle.ConnectionStateChanged,
+            message: $"Connection state changed to {nextState}",
+            endpointId: endpoint.EndpointId);
     }
 
     private static TimeSpan ComputeBackoffDelay(int failureCount)
@@ -138,39 +199,24 @@ internal sealed class UpstreamConnectionLifecycleManager
 
     private void PublishMetricsSnapshot(DateTimeOffset updatedUtc)
     {
-        int enabledCount;
-        int connectedCount;
-        int connectingCount;
-        int disconnectedCount;
-        int totalFailures;
-
-        lock (_sync)
-        {
-            var allStates = _runtimeByEndpointId.Values.ToList();
-            enabledCount = allStates.Count(state => state.Enabled);
-            connectedCount = allStates.Count(state => state.Enabled && string.Equals(state.State, "Connected", StringComparison.Ordinal));
-            connectingCount = allStates.Count(state => state.Enabled && string.Equals(state.State, "Connecting", StringComparison.Ordinal));
-            disconnectedCount = allStates.Count(state => state.Enabled && string.Equals(state.State, "Disconnected", StringComparison.Ordinal));
-            totalFailures = allStates.Sum(state => state.FailureCount);
-        }
-
-        var snapshot = new ConnectionLifecycleDiagnosticsSnapshot(
-            updatedUtc,
-            enabledCount,
-            connectedCount,
-            connectingCount,
-            disconnectedCount,
-            totalFailures);
+        var snapshot = GetSnapshot(updatedUtc);
 
         ConnectionLifecycleDiagnosticsStore.Save(snapshot);
 
         GatewayLogMessages.ConnectionMetricsSnapshotPublished(
             _logger,
-            enabledCount,
-            connectedCount,
-            connectingCount,
-            disconnectedCount,
-            totalFailures);
+            snapshot.EnabledEndpointCount,
+            snapshot.ConnectedEndpointCount,
+            snapshot.ConnectingEndpointCount,
+            snapshot.DisconnectedEndpointCount,
+            snapshot.TotalFailureCount);
+
+        _eventStreamBroker.Publish(
+            category: IpcEventCategories.ConnectionLifecycle,
+            name: nameof(UAGatewayEventIds.ConnectionLifecycle.ConnectionMetricsSnapshotPublished),
+            severity: IpcEventSeverity.Information,
+            serviceEventId: UAGatewayEventIds.ConnectionLifecycle.ConnectionMetricsSnapshotPublished,
+            message: $"Connection metrics snapshot. Enabled={snapshot.EnabledEndpointCount}, Connected={snapshot.ConnectedEndpointCount}, Connecting={snapshot.ConnectingEndpointCount}, Disconnected={snapshot.DisconnectedEndpointCount}, Failures={snapshot.TotalFailureCount}");
     }
 
     private sealed class EndpointRuntimeState

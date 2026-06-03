@@ -4,126 +4,148 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:UAGateway.UI.Controls"
     Title="UA Gateway"
     mc:Ignorable="d">
-    <Grid Padding="24">
-        <StackPanel Spacing="12">
-            <TextBlock Text="UA Gateway"
-                       FontSize="30"
-                       FontWeight="SemiBold" />
-            <TextBlock Text="Operations shell"
-                       Opacity="0.75" />
+    <Grid x:Name="RootLayout"
+          Padding="24"
+          Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid RowSpacing="12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
 
-            <TabView>
+            <Border Grid.Row="0"
+                    Background="{ThemeResource ShellToolbarBackgroundBrush}"
+                    BorderBrush="{ThemeResource ShellSurfaceBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <MenuBar Background="{ThemeResource ShellToolbarBackgroundBrush}">
+                    <MenuBarItem Title="File">
+                        <MenuFlyoutItem Text="New" IsEnabled="False" />
+                        <MenuFlyoutItem Text="Open" IsEnabled="False" />
+                        <MenuFlyoutItem Text="Save" IsEnabled="False" />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem Text="Exit" IsEnabled="False" />
+                    </MenuBarItem>
+
+                    <MenuBarItem Title="Edit">
+                        <MenuFlyoutItem Text="Undo" IsEnabled="False" />
+                        <MenuFlyoutItem Text="Redo" IsEnabled="False" />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem Text="Cut" IsEnabled="False" />
+                        <MenuFlyoutItem Text="Copy" IsEnabled="False" />
+                        <MenuFlyoutItem Text="Paste" IsEnabled="False" />
+                    </MenuBarItem>
+
+                    <MenuBarItem Title="View">
+                        <MenuFlyoutItem Text="Dashboard" IsEnabled="False" />
+                        <MenuFlyoutItem Text="Connections" IsEnabled="False" />
+                        <MenuFlyoutItem Text="Logs" IsEnabled="False" />
+                        <MenuFlyoutItem Text="Live Output" IsEnabled="False" />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem Text="Refresh" IsEnabled="False" />
+                    </MenuBarItem>
+
+                    <MenuBarItem Title="Settings">
+                        <MenuFlyoutSubItem Text="Theme">
+                            <MenuFlyoutItem Text="System"
+                                            Click="ThemeSystem_Click" />
+                            <MenuFlyoutItem Text="Light"
+                                            Click="ThemeLight_Click" />
+                            <MenuFlyoutItem Text="Dark"
+                                            Click="ThemeDark_Click" />
+                        </MenuFlyoutSubItem>
+                        <MenuFlyoutSubItem Text="Palette">
+                            <MenuFlyoutItem Text="WinUI"
+                                            Click="PaletteWinUI_Click" />
+                            <MenuFlyoutItem Text="VS Code"
+                                            Click="PaletteVSCode_Click" />
+                        </MenuFlyoutSubItem>
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem Text="Application Settings" IsEnabled="False" />
+                        <MenuFlyoutItem Text="Certificates and Trust" IsEnabled="False" />
+                        <MenuFlyoutItem Text="Diagnostics Paths" IsEnabled="False" />
+                    </MenuBarItem>
+
+                    <MenuBarItem Title="Help">
+                        <MenuFlyoutItem Text="Documentation" IsEnabled="False" />
+                        <MenuFlyoutItem Text="About UA Gateway" IsEnabled="False" />
+                    </MenuBarItem>
+                </MenuBar>
+            </Border>
+
+            <TabView Grid.Row="1"
+                     x:Name="MainTabs"
+                     Background="{ThemeResource ShellTabStripBackgroundBrush}"
+                     BorderBrush="{ThemeResource ShellSurfaceBorderBrush}"
+                     BorderThickness="1">
+                <TabView.Resources>
+                    <SolidColorBrush x:Key="TabViewItemHeaderBackground"
+                                     Color="{ThemeResource ShellTabHeaderBackgroundColor}" />
+                    <SolidColorBrush x:Key="TabViewItemHeaderBackgroundSelected"
+                                     Color="{ThemeResource ShellTabHeaderBackgroundSelectedColor}" />
+                    <SolidColorBrush x:Key="TabViewItemHeaderBackgroundPointerOver"
+                                     Color="{ThemeResource ShellTabHeaderBackgroundPointerOverColor}" />
+                </TabView.Resources>
                 <TabViewItem Header="Dashboard">
-                    <ScrollViewer>
-                        <StackPanel Padding="12"
-                                    Spacing="12">
-                            <Border Padding="12"
-                                    Background="#11000000"
-                                    CornerRadius="8">
-                                <StackPanel Spacing="4">
-                                    <TextBlock Text="Security Bootstrap"
-                                               FontWeight="SemiBold" />
-                                    <TextBlock x:Name="SecurityStatusText" />
-                                    <TextBlock x:Name="SecurityReasonText"
-                                               TextWrapping="WrapWholeWords" />
-                                    <TextBlock x:Name="SecurityCountsText" />
-                                    <TextBlock x:Name="SecurityThumbprintText"
-                                               TextWrapping="WrapWholeWords" />
-                                    <TextBlock x:Name="SecurityUpdatedText"
-                                               Opacity="0.75" />
-                                </StackPanel>
-                            </Border>
-
-                            <Border Padding="12"
-                                    Background="#11000000"
-                                    CornerRadius="8">
-                                <StackPanel Spacing="4">
-                                    <TextBlock Text="Connection Lifecycle"
-                                               FontWeight="SemiBold" />
-                                    <TextBlock x:Name="ConnectionSummaryText" />
-                                    <TextBlock x:Name="ConnectionStateText" />
-                                    <TextBlock x:Name="ConnectionUpdatedText"
-                                               Opacity="0.75" />
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-                    </ScrollViewer>
+                    <controls:DashboardOverview x:Name="DashboardOverviewView" />
                 </TabViewItem>
 
                 <TabViewItem Header="Connections">
-                    <StackPanel Padding="12"
-                                Spacing="8">
-                        <TextBlock x:Name="ConnectionsHeaderText"
-                                   FontWeight="SemiBold" />
-
-                    <StackPanel Orientation="Horizontal"
-                            Spacing="8">
-                        <TextBox x:Name="DraftDisplayNameTextBox"
-                             Width="220"
-                             PlaceholderText="Display name" />
-                        <TextBox x:Name="DraftEndpointUrlTextBox"
-                             Width="320"
-                             PlaceholderText="opc.tcp://host:port/path" />
-                        <ToggleSwitch x:Name="DraftEnabledToggle"
-                              Header="Enabled"
-                              IsOn="True" />
-                        <Button Content="Add To Draft"
-                            Click="AddConnectionDraft_Click" />
-                    </StackPanel>
-
-                    <StackPanel Orientation="Horizontal"
-                            Spacing="8">
-                        <Button Content="Reload Draft"
-                            Click="ReloadConnectionsDraft_Click" />
-                        <Button Content="Apply Draft"
-                            Click="ApplyConnectionsDraft_Click" />
-                    </StackPanel>
-
-                    <TextBlock x:Name="ConnectionsApplyStatusText"
-                           TextWrapping="WrapWholeWords"
-                           Opacity="0.8" />
-
-                        <ListView x:Name="ConnectionsList"
-                                  Height="360" />
-                    </StackPanel>
+                    <controls:ConnectionsEditor x:Name="ConnectionsEditorView" />
                 </TabViewItem>
 
                 <TabViewItem Header="Logs">
-                    <StackPanel Padding="12"
-                                Spacing="8">
-                        <TextBlock Text="Diagnostics log filters"
-                                   FontWeight="SemiBold" />
+                    <controls:LogsViewer x:Name="LogsViewerView" />
+                </TabViewItem>
 
-                        <StackPanel Orientation="Horizontal"
-                                    Spacing="8">
-                            <ComboBox x:Name="SeverityFilterComboBox"
-                                      Width="160"
-                                      SelectedIndex="0">
-                                <x:String>All Severities</x:String>
-                                <x:String>Information</x:String>
-                                <x:String>Warning</x:String>
-                                <x:String>Error</x:String>
-                                <x:String>Critical</x:String>
-                            </ComboBox>
-                            <TextBox x:Name="CategoryFilterTextBox"
-                                     Width="220"
-                                     PlaceholderText="Category contains..." />
-                            <TextBox x:Name="EventIdFilterTextBox"
-                                     Width="180"
-                                     PlaceholderText="Event ID contains..." />
-                            <Button Content="Apply"
-                                    Click="ApplyLogFilters_Click" />
-                        </StackPanel>
-
-                        <TextBlock x:Name="LogsSummaryText"
-                                   Opacity="0.75" />
-                        <ListView x:Name="LogsList"
-                                  Height="320" />
-                    </StackPanel>
+                <TabViewItem Header="Live Output">
+                    <controls:LiveOutputViewer x:Name="LiveOutputViewerView" />
                 </TabViewItem>
             </TabView>
-        </StackPanel>
+
+            <Border Grid.Row="2"
+                    Padding="10,8"
+                    Background="{ThemeResource ShellToolbarBackgroundBrush}"
+                    BorderBrush="{ThemeResource ShellSurfaceBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <Grid ColumnSpacing="18">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock x:Name="StatusServiceText"
+                               Grid.Column="0"
+                               FontWeight="SemiBold"
+                               Text="Service: Unknown" />
+                    <TextBlock x:Name="StatusIpcText"
+                               Grid.Column="1"
+                               Text="UI-Service: Disconnected" />
+                    <TextBlock x:Name="StatusClientsText"
+                               Grid.Column="2"
+                               Text="Clients connected: n/a" />
+                    <TextBlock x:Name="StatusServersText"
+                               Grid.Column="3"
+                               Text="Servers connected: 0/0" />
+                    <TextBlock x:Name="StatusFailuresText"
+                               Grid.Column="4"
+                               Text="Failures: 0" />
+                    <TextBlock x:Name="StatusUpdatedText"
+                               Grid.Column="5"
+                               HorizontalAlignment="Right"
+                               Opacity="0.8"
+                               Text="Updated: n/a" />
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </Window>

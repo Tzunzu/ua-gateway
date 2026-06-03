@@ -41,6 +41,19 @@
 			"group": "test"
 		},
 		{
+			"label": "Test UAGateway Service Integration",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"test",
+				"tests/UAGateway.Service.IntegrationTests/UAGateway.Service.IntegrationTests.csproj"
+			],
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "test"
+		},
+		{
 			"label": "Run UAGateway Service",
 			"type": "shell",
 			"command": "dotnet",
@@ -73,6 +86,16 @@
 				"-FilePath",
 				"${workspaceFolder}/src/UAGateway.UI/bin/Debug/net8.0-windows10.0.19041.0/win-x64/UAGateway.UI.exe"
 			],
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "Run UAGateway Service + UI",
+			"dependsOn": [
+				"Run UAGateway Service",
+				"Start UAGateway UI (exe)"
+			],
+			"dependsOrder": "parallel",
 			"problemMatcher": [],
 			"group": "none"
 		}

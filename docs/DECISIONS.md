@@ -26,6 +26,7 @@
 
 1. Service-to-UI contract transport
 - Named pipes vs gRPC vs other local IPC
+- Working contract draft (transport-agnostic) is documented in SERVICE_UI_IPC_CONTRACT_DRAFT.md
 
 2. Namespace mapping model details
 - Final mapping rules and transformation strategy

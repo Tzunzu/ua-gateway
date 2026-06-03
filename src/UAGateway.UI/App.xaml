@@ -9,6 +9,42 @@
             <ResourceDictionary.MergedDictionaries>
                 <controls:XamlControlsResources />
             </ResourceDictionary.MergedDictionaries>
+
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Default">
+                    <Color x:Key="ShellToolbarBackgroundColor">#FFF3F3F3</Color>
+                    <Color x:Key="ShellTabStripBackgroundColor">#FFECECEC</Color>
+                    <Color x:Key="ShellTabHeaderBackgroundColor">#FFF6F6F6</Color>
+                    <Color x:Key="ShellTabHeaderBackgroundSelectedColor">#FFFFFFFF</Color>
+                    <Color x:Key="ShellTabHeaderBackgroundPointerOverColor">#FFE8E8E8</Color>
+                    <Color x:Key="ShellSurfaceBorderColor">#FFC8C8C8</Color>
+                </ResourceDictionary>
+
+                <ResourceDictionary x:Key="Light">
+                    <Color x:Key="ShellToolbarBackgroundColor">#FFF3F3F3</Color>
+                    <Color x:Key="ShellTabStripBackgroundColor">#FFECECEC</Color>
+                    <Color x:Key="ShellTabHeaderBackgroundColor">#FFF6F6F6</Color>
+                    <Color x:Key="ShellTabHeaderBackgroundSelectedColor">#FFFFFFFF</Color>
+                    <Color x:Key="ShellTabHeaderBackgroundPointerOverColor">#FFE8E8E8</Color>
+                    <Color x:Key="ShellSurfaceBorderColor">#FFC8C8C8</Color>
+                </ResourceDictionary>
+
+                <ResourceDictionary x:Key="Dark">
+                    <Color x:Key="ShellToolbarBackgroundColor">#FF25252A</Color>
+                    <Color x:Key="ShellTabStripBackgroundColor">#FF1F2024</Color>
+                    <Color x:Key="ShellTabHeaderBackgroundColor">#FF2A2C31</Color>
+                    <Color x:Key="ShellTabHeaderBackgroundSelectedColor">#FF3A3D45</Color>
+                    <Color x:Key="ShellTabHeaderBackgroundPointerOverColor">#FF343740</Color>
+                    <Color x:Key="ShellSurfaceBorderColor">#FF4A4E57</Color>
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+
+            <SolidColorBrush x:Key="ShellToolbarBackgroundBrush" Color="{ThemeResource ShellToolbarBackgroundColor}" />
+            <SolidColorBrush x:Key="ShellTabStripBackgroundBrush" Color="{ThemeResource ShellTabStripBackgroundColor}" />
+            <SolidColorBrush x:Key="ShellTabHeaderBackgroundBrush" Color="{ThemeResource ShellTabHeaderBackgroundColor}" />
+            <SolidColorBrush x:Key="ShellTabHeaderBackgroundSelectedBrush" Color="{ThemeResource ShellTabHeaderBackgroundSelectedColor}" />
+            <SolidColorBrush x:Key="ShellTabHeaderBackgroundPointerOverBrush" Color="{ThemeResource ShellTabHeaderBackgroundPointerOverColor}" />
+            <SolidColorBrush x:Key="ShellSurfaceBorderBrush" Color="{ThemeResource ShellSurfaceBorderColor}" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>
