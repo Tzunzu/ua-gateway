@@ -1,0 +1,32 @@
+name: Windows CI
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - "**"
+
+jobs:
+  build-and-test:
+    name: Restore Build Test
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore solution
+        run: dotnet restore UAGateway.sln
+
+      - name: Build solution
+        run: dotnet build UAGateway.sln --configuration Release --no-restore
+
+      - name: Test solution
+        run: dotnet test UAGateway.sln --configuration Release --no-build
