@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Configuration;
+using UAGateway.Core.Configuration;
 using UAGateway.Core.Diagnostics;
 using UAGateway.Core.Health;
 
@@ -10,11 +11,16 @@ internal sealed class OpcUaBootstrapper
 {
     private readonly ILogger<OpcUaBootstrapper> _logger;
     private readonly StartupHealthState _startupHealthState;
+    private readonly UpstreamConnectionLifecycleManager _connectionLifecycleManager;
 
-    public OpcUaBootstrapper(ILogger<OpcUaBootstrapper> logger, StartupHealthState startupHealthState)
+    public OpcUaBootstrapper(
+        ILogger<OpcUaBootstrapper> logger,
+        StartupHealthState startupHealthState,
+        UpstreamConnectionLifecycleManager connectionLifecycleManager)
     {
         _logger = logger;
         _startupHealthState = startupHealthState;
+        _connectionLifecycleManager = connectionLifecycleManager;
     }
 
     public void Initialize()
@@ -33,6 +39,10 @@ internal sealed class OpcUaBootstrapper
                 GatewayLogMessages.OpcUaConfigurationBuildStarted(_logger, configApplyCorrelationId);
 
                 var applicationConfiguration = BuildApplicationConfiguration();
+                var upstreamEndpointConfiguration = LoadValidatedUpstreamEndpointConfiguration();
+                var enabledEndpointCount = upstreamEndpointConfiguration.Endpoints.Count(endpoint => endpoint.Enabled);
+                _connectionLifecycleManager.SetApplicationConfiguration(applicationConfiguration);
+                _connectionLifecycleManager.ApplyConfiguration(upstreamEndpointConfiguration);
 
                 ValidateApplicationConfiguration(applicationConfiguration);
                 GatewayLogMessages.OpcUaConfigurationValidated(
@@ -50,6 +60,14 @@ internal sealed class OpcUaBootstrapper
                     "Configuration and security bootstrap completed.",
                     configApplyCorrelationId);
 
+                if (enabledEndpointCount == 0)
+                {
+                    PublishStartupHealth(
+                        StartupHealthStatus.Degraded,
+                        "Startup completed without configured upstream endpoints.",
+                        configApplyCorrelationId);
+                }
+
                 GatewayLogMessages.ConfigApplyCompleted(_logger, configApplyCorrelationId);
             }
 
@@ -59,13 +77,23 @@ internal sealed class OpcUaBootstrapper
             {
                 GatewayLogMessages.ReconnectFlowStarted(_logger, reconnectCorrelationId);
                 GatewayLogMessages.ConnectionManagerInitialized(_logger);
-                GatewayLogMessages.NoUpstreamEndpointsConfigured(_logger, reconnectCorrelationId);
-                GatewayLogMessages.ReconnectFlowIdleNoEndpoints(_logger, reconnectCorrelationId);
 
-                PublishStartupHealth(
-                    StartupHealthStatus.Degraded,
-                    "Startup completed without configured upstream endpoints.",
-                    reconnectCorrelationId);
+                var enabledEndpointCount = _connectionLifecycleManager.EnabledEndpointCount;
+
+                if (enabledEndpointCount == 0)
+                {
+                    GatewayLogMessages.NoUpstreamEndpointsConfigured(_logger, reconnectCorrelationId);
+                    GatewayLogMessages.ReconnectFlowIdleNoEndpoints(_logger, reconnectCorrelationId);
+
+                    PublishStartupHealth(
+                        StartupHealthStatus.Degraded,
+                        "Startup completed without configured upstream endpoints.",
+                        reconnectCorrelationId);
+                }
+                else
+                {
+                    GatewayLogMessages.UpstreamEndpointsConfigured(_logger, enabledEndpointCount);
+                }
             }
         }
         catch (Exception ex)
@@ -365,6 +393,35 @@ internal sealed class OpcUaBootstrapper
             snapshot.Status.ToString(),
             snapshot.Reason,
             snapshot.CorrelationId ?? correlationId);
+    }
+
+    private UpstreamEndpointConfigurationDocument LoadValidatedUpstreamEndpointConfiguration()
+    {
+        var document = UpstreamEndpointConfigurationStore.LoadOrCreateDefault();
+        var enabledEndpointCount = document.Endpoints.Count(endpoint => endpoint.Enabled);
+
+        GatewayLogMessages.UpstreamEndpointConfigurationLoaded(
+            _logger,
+            document.Endpoints.Count,
+            enabledEndpointCount);
+
+        var issues = UpstreamEndpointConfigurationValidator.Validate(document);
+
+        if (issues.Count == 0)
+        {
+            return document;
+        }
+
+        foreach (var issue in issues)
+        {
+            GatewayLogMessages.UpstreamEndpointConfigurationValidationFailed(
+                _logger,
+                issue.EndpointId,
+                issue.Message);
+        }
+
+        throw new InvalidOperationException(
+            "Upstream endpoint configuration failed validation. Fix config/upstream-endpoints.json and restart.");
     }
 
     private void PublishSecurityDiagnosticsSnapshot(SecurityBootstrapDiagnosticsSnapshot snapshot)

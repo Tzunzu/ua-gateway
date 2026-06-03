@@ -17,6 +17,12 @@ public static class UAGatewayEventIds
         public const int NoUpstreamEndpointsConfigured = 2001;
         public const int ReconnectFlowStarted = 2002;
         public const int ReconnectFlowIdleNoEndpoints = 2003;
+        public const int UpstreamEndpointsConfigured = 2004;
+        public const int ConnectionAttemptStarted = 2005;
+        public const int ConnectionAttemptSucceeded = 2006;
+        public const int ConnectionAttemptFailed = 2007;
+        public const int ConnectionStateChanged = 2008;
+        public const int ConnectionMetricsSnapshotPublished = 2009;
         public const int ReservedStart = 2000;
         public const int ReservedEnd = 2199;
     }
@@ -42,6 +48,8 @@ public static class UAGatewayEventIds
         public const int OpcUaConfigurationBuildStarted = 4002;
         public const int OpcUaConfigurationValidated = 4003;
         public const int OpcUaConfigurationValidationFailed = 4004;
+        public const int UpstreamEndpointConfigurationLoaded = 4005;
+        public const int UpstreamEndpointConfigurationValidationFailed = 4006;
         public const int ReservedStart = 4000;
         public const int ReservedEnd = 4299;
     }

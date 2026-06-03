@@ -97,6 +97,20 @@ internal static partial class GatewayLogMessages
     public static partial void ConfigApplyCompleted(ILogger logger, string correlationId);
 
     [LoggerMessage(
+        EventId = UAGatewayEventIds.MappingAndConfiguration.UpstreamEndpointConfigurationLoaded,
+        EventName = nameof(UAGatewayEventIds.MappingAndConfiguration.UpstreamEndpointConfigurationLoaded),
+        Level = LogLevel.Information,
+        Message = "Upstream endpoint configuration loaded. EndpointCount: {EndpointCount}, EnabledEndpointCount: {EnabledEndpointCount}")]
+    public static partial void UpstreamEndpointConfigurationLoaded(ILogger logger, int endpointCount, int enabledEndpointCount);
+
+    [LoggerMessage(
+        EventId = UAGatewayEventIds.MappingAndConfiguration.UpstreamEndpointConfigurationValidationFailed,
+        EventName = nameof(UAGatewayEventIds.MappingAndConfiguration.UpstreamEndpointConfigurationValidationFailed),
+        Level = LogLevel.Error,
+        Message = "Upstream endpoint configuration validation failed. EndpointId: {EndpointId}, Issue: {Issue}")]
+    public static partial void UpstreamEndpointConfigurationValidationFailed(ILogger logger, string endpointId, string issue);
+
+    [LoggerMessage(
         EventId = UAGatewayEventIds.ServiceLifecycle.WorkerStarting,
         EventName = nameof(UAGatewayEventIds.ServiceLifecycle.WorkerStarting),
         Level = LogLevel.Information,
@@ -137,6 +151,48 @@ internal static partial class GatewayLogMessages
         Level = LogLevel.Information,
         Message = "Upstream connection lifecycle manager initialized.")]
     public static partial void ConnectionManagerInitialized(ILogger logger);
+
+    [LoggerMessage(
+        EventId = UAGatewayEventIds.ConnectionLifecycle.UpstreamEndpointsConfigured,
+        EventName = nameof(UAGatewayEventIds.ConnectionLifecycle.UpstreamEndpointsConfigured),
+        Level = LogLevel.Information,
+        Message = "Upstream endpoints are configured. EnabledEndpointCount: {EnabledEndpointCount}")]
+    public static partial void UpstreamEndpointsConfigured(ILogger logger, int enabledEndpointCount);
+
+    [LoggerMessage(
+        EventId = UAGatewayEventIds.ConnectionLifecycle.ConnectionAttemptStarted,
+        EventName = nameof(UAGatewayEventIds.ConnectionLifecycle.ConnectionAttemptStarted),
+        Level = LogLevel.Information,
+        Message = "Connection attempt started. EndpointId: {EndpointId}, EndpointUrl: {EndpointUrl}, CorrelationId: {CorrelationId}")]
+    public static partial void ConnectionAttemptStarted(ILogger logger, string endpointId, string endpointUrl, string correlationId);
+
+    [LoggerMessage(
+        EventId = UAGatewayEventIds.ConnectionLifecycle.ConnectionAttemptSucceeded,
+        EventName = nameof(UAGatewayEventIds.ConnectionLifecycle.ConnectionAttemptSucceeded),
+        Level = LogLevel.Information,
+        Message = "Connection attempt succeeded. EndpointId: {EndpointId}, EndpointUrl: {EndpointUrl}")]
+    public static partial void ConnectionAttemptSucceeded(ILogger logger, string endpointId, string endpointUrl);
+
+    [LoggerMessage(
+        EventId = UAGatewayEventIds.ConnectionLifecycle.ConnectionAttemptFailed,
+        EventName = nameof(UAGatewayEventIds.ConnectionLifecycle.ConnectionAttemptFailed),
+        Level = LogLevel.Warning,
+        Message = "Connection attempt failed. EndpointId: {EndpointId}, EndpointUrl: {EndpointUrl}, FailureCount: {FailureCount}, NextRetryUtc: {NextRetryUtc}, Error: {ErrorMessage}")]
+    public static partial void ConnectionAttemptFailed(ILogger logger, string endpointId, string endpointUrl, int failureCount, DateTimeOffset nextRetryUtc, string errorMessage);
+
+    [LoggerMessage(
+        EventId = UAGatewayEventIds.ConnectionLifecycle.ConnectionStateChanged,
+        EventName = nameof(UAGatewayEventIds.ConnectionLifecycle.ConnectionStateChanged),
+        Level = LogLevel.Information,
+        Message = "Connection state changed. EndpointId: {EndpointId}, State: {State}")]
+    public static partial void ConnectionStateChanged(ILogger logger, string endpointId, string state);
+
+    [LoggerMessage(
+        EventId = UAGatewayEventIds.ConnectionLifecycle.ConnectionMetricsSnapshotPublished,
+        EventName = nameof(UAGatewayEventIds.ConnectionLifecycle.ConnectionMetricsSnapshotPublished),
+        Level = LogLevel.Information,
+        Message = "Connection metrics snapshot published. Enabled: {EnabledCount}, Connected: {ConnectedCount}, Connecting: {ConnectingCount}, Disconnected: {DisconnectedCount}, TotalFailures: {TotalFailures}")]
+    public static partial void ConnectionMetricsSnapshotPublished(ILogger logger, int enabledCount, int connectedCount, int connectingCount, int disconnectedCount, int totalFailures);
 
     [LoggerMessage(
         EventId = UAGatewayEventIds.ConnectionLifecycle.ReconnectFlowStarted,

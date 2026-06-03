@@ -43,9 +43,9 @@ Target: 120 to 180 hours
 
 | ID | Priority | Task | Estimate (h) | Depends On | Status | Done Criteria |
 |---|---|---|---:|---|---|---|
-| M3-01 | P0 | Implement upstream endpoint config model | 10-16 | M2-01 | Todo | Endpoint model is persistent and validated |
-| M3-02 | P0 | Implement connect/reconnect/backoff lifecycle | 22-36 | M3-01 | Todo | Connections recover predictably with observable states |
-| M3-03 | P0 | Implement session health and metrics snapshot | 12-20 | M3-02 | Todo | Health and counters available for diagnostics |
+| M3-01 | P0 | Implement upstream endpoint config model | 10-16 | M2-01 | Done | Endpoint model is persistent and validated |
+| M3-02 | P0 | Implement connect/reconnect/backoff lifecycle | 22-36 | M3-01 | Done | Connections recover predictably with observable states |
+| M3-03 | P0 | Implement session health and metrics snapshot | 12-20 | M3-02 | Done | Health and counters available for diagnostics |
 | M3-04 | P0 | Host local OPC UA server endpoint | 20-30 | M2-01 | Todo | Local endpoint is reachable and stable |
 | M3-05 | P3 | Implement basic namespace projection | 20-30 | M3-04, M3-02 | Todo | Browse/read/subscribe works for mapped nodes |
 
@@ -75,4 +75,4 @@ Use this to forecast schedule based on weekly available time.
 Start with M1-01 through M1-03 before any new feature work.
 
 Recommended first in-progress task:
-- M3-01 Implement upstream endpoint config model
+- M3-04 Host local OPC UA server endpoint
