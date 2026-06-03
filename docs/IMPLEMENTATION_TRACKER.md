@@ -22,8 +22,8 @@ Target: 40 to 70 hours
 | M1-02 | P1 | Define shared event ID constants and ranges | 4-8 | None | Done | Event ID constants exist and are used in service logs |
 | M1-03 | P1 | Add structured logging categories and templates | 4-8 | M1-02 | Done | Service emits categorized logs for lifecycle and connection events |
 | M1-04 | P1 | Add correlation IDs for config apply and reconnect flows | 6-10 | M1-03 | Done | Related events include correlation IDs end-to-end |
-| M1-05 | P1 | Add rotating file logging sink for local diagnostics | 6-12 | M1-03 | Todo | Logs persist locally with rotation and retention settings |
-| M1-06 | P1 | Add debug runbook and issue template requirements | 4-6 | M1-03 | Todo | Runbook exists and issue template asks for event IDs and logs |
+| M1-05 | P1 | Add rotating file logging sink for local diagnostics | 6-12 | M1-03 | Done | Logs persist locally with rotation and retention settings |
+| M1-06 | P1 | Add debug runbook and issue template requirements | 4-6 | M1-03 | Done | Runbook exists and issue template asks for event IDs and logs |
 
 ## Milestone M2: Runtime Bootstrap and Security Baseline
 
@@ -75,4 +75,4 @@ Use this to forecast schedule based on weekly available time.
 Start with M1-01 through M1-03 before any new feature work.
 
 Recommended first in-progress task:
-- M1-05 Add rotating file logging sink for local diagnostics
+- M2-01 Build full OPC UA ApplicationConfiguration

@@ -1,0 +1,94 @@
+name: Bug Report
+description: Report a reproducible UA Gateway defect with required diagnostics.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting this issue.
+        Please include complete diagnostic data so we can reproduce and triage quickly.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One concise paragraph describing the failure.
+      placeholder: What failed, where, and when?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction Steps
+      description: Deterministic steps to reproduce the issue.
+      placeholder: |
+        1. Start service with ...
+        2. Apply config ...
+        3. Observe failure ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should have happened.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What happened instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: event_ids
+    attributes:
+      label: Event IDs and Timestamps (Required)
+      description: Include event IDs with UTC timestamps from relevant logs.
+      placeholder: |
+        2026-06-03T18:42:01Z EventId=4000 Config apply started
+        2026-06-03T18:42:02Z EventId=1003 OPC UA bootstrap initialized
+        2026-06-03T18:42:03Z EventId=4001 Config apply completed
+    validations:
+      required: true
+
+  - type: textarea
+    id: correlation_ids
+    attributes:
+      label: Correlation IDs (Required)
+      description: Include any correlation IDs associated with config apply or reconnect flows.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log Excerpts and Attachments (Required)
+      description: Paste a focused log excerpt and attach full logs if possible.
+    validations:
+      required: true
+
+  - type: input
+    id: commit
+    attributes:
+      label: Commit SHA
+      description: The commit where the issue was observed.
+      placeholder: e4561aa
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS version and run mode (local task or Windows Service).
+      placeholder: Windows 11 24H2, local VS Code run task
+    validations:
+      required: true
