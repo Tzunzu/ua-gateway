@@ -18,9 +18,9 @@ Target: 40 to 70 hours
 
 | ID | Priority | Task | Estimate (h) | Depends On | Status | Done Criteria |
 |---|---|---|---:|---|---|---|
-| M1-01 | P1 | Add Windows CI workflow for restore/build/test | 2-4 | None | Todo | Workflow runs on push and pull request and is green |
-| M1-02 | P1 | Define shared event ID constants and ranges | 4-8 | None | Todo | Event ID constants exist and are used in service logs |
-| M1-03 | P1 | Add structured logging categories and templates | 4-8 | M1-02 | Todo | Service emits categorized logs for lifecycle and connection events |
+| M1-01 | P1 | Add Windows CI workflow for restore/build/test | 2-4 | None | Done | Workflow runs on push and pull request and is green |
+| M1-02 | P1 | Define shared event ID constants and ranges | 4-8 | None | Done | Event ID constants exist and are used in service logs |
+| M1-03 | P1 | Add structured logging categories and templates | 4-8 | M1-02 | Done | Service emits categorized logs for lifecycle and connection events |
 | M1-04 | P1 | Add correlation IDs for config apply and reconnect flows | 6-10 | M1-03 | Todo | Related events include correlation IDs end-to-end |
 | M1-05 | P1 | Add rotating file logging sink for local diagnostics | 6-12 | M1-03 | Todo | Logs persist locally with rotation and retention settings |
 | M1-06 | P1 | Add debug runbook and issue template requirements | 4-6 | M1-03 | Todo | Runbook exists and issue template asks for event IDs and logs |
@@ -75,4 +75,4 @@ Use this to forecast schedule based on weekly available time.
 Start with M1-01 through M1-03 before any new feature work.
 
 Recommended first in-progress task:
-- M1-01 Add Windows CI workflow for restore/build/test
+- M1-04 Add correlation IDs for config apply and reconnect flows

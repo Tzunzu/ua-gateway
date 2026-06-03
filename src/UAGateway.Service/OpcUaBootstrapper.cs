@@ -14,8 +14,11 @@ internal sealed class OpcUaBootstrapper
 
     public void Initialize()
     {
+        GatewayLogMessages.ConnectionManagerInitialized(_logger);
+        GatewayLogMessages.NoUpstreamEndpointsConfigured(_logger);
+
         // This confirms the OPC UA stack package is available and wired into the service.
         var statusCode = StatusCodes.Good;
-        _logger.LogInformation("OPC UA stack initialized. Baseline status code: {StatusCode}", statusCode);
+        GatewayLogMessages.OpcUaBootstrapInitialized(_logger, statusCode);
     }
 }

@@ -16,13 +16,16 @@ internal sealed class GatewayWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("UA Gateway service worker starting.");
+        GatewayLogMessages.WorkerStarting(_logger);
+
         _bootstrapper.Initialize();
-        _logger.LogInformation("UA Gateway service worker started.");
+
+        GatewayLogMessages.WorkerStarted(_logger);
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            _logger.LogInformation("UA Gateway service heartbeat: {UtcNow}", DateTimeOffset.UtcNow);
+            GatewayLogMessages.WorkerHeartbeat(_logger, DateTimeOffset.UtcNow);
+
             await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
         }
     }
