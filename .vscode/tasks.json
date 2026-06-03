@@ -64,6 +64,17 @@
 			],
 			"problemMatcher": [],
 			"group": "none"
+		},
+		{
+			"label": "Start UAGateway UI (exe)",
+			"type": "shell",
+			"command": "Start-Process",
+			"args": [
+				"-FilePath",
+				"${workspaceFolder}/src/UAGateway.UI/bin/Debug/net8.0-windows10.0.19041.0/win-x64/UAGateway.UI.exe"
+			],
+			"problemMatcher": [],
+			"group": "none"
 		}
 	]
 }

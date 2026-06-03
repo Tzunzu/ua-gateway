@@ -11,6 +11,17 @@
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
       "stopAtEntry": false
+    },
+    {
+      "name": "Launch UAGateway UI",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "Build UAGateway",
+      "program": "${workspaceFolder}/src/UAGateway.UI/bin/Debug/net8.0-windows10.0.19041.0/win-x64/UAGateway.UI.exe",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "stopAtEntry": false
     }
   ]
 }

@@ -1,7 +1,10 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Windowing;
 using UAGateway.Core.Configuration;
 using UAGateway.Core.Diagnostics;
+using Windows.Graphics;
+using WinRT.Interop;
 
 namespace UAGateway.UI;
 
@@ -13,10 +16,41 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        LoadSecurityDiagnostics();
-        LoadConnectionDiagnostics();
-        ReloadConnectionsDraft();
-        LoadLogs();
+
+        EnsureVisibleOnLaunch();
+        LoadInitialState();
+    }
+
+    private void LoadInitialState()
+    {
+        try
+        {
+            LoadSecurityDiagnostics();
+            LoadConnectionDiagnostics();
+            ReloadConnectionsDraft();
+            LoadLogs();
+        }
+        catch (Exception ex)
+        {
+            ConnectionsApplyStatusText.Text = $"Startup warning: {ex.Message}";
+        }
+    }
+
+    private void EnsureVisibleOnLaunch()
+    {
+        try
+        {
+            var hWnd = WindowNative.GetWindowHandle(this);
+            var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hWnd);
+            var appWindow = AppWindow.GetFromWindowId(windowId);
+
+            appWindow.Resize(new SizeInt32(1280, 840));
+            appWindow.Move(new PointInt32(80, 60));
+        }
+        catch
+        {
+            // Best-effort positioning only.
+        }
     }
 
     private void LoadSecurityDiagnostics()
