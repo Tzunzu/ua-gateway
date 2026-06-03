@@ -111,6 +111,13 @@ internal static partial class GatewayLogMessages
     public static partial void UpstreamEndpointConfigurationValidationFailed(ILogger logger, string endpointId, string issue);
 
     [LoggerMessage(
+        EventId = UAGatewayEventIds.MappingAndConfiguration.NamespaceProjectionBuilt,
+        EventName = nameof(UAGatewayEventIds.MappingAndConfiguration.NamespaceProjectionBuilt),
+        Level = LogLevel.Information,
+        Message = "Namespace projection built. ProjectedEndpointCount: {ProjectedEndpointCount}")]
+    public static partial void NamespaceProjectionBuilt(ILogger logger, int projectedEndpointCount);
+
+    [LoggerMessage(
         EventId = UAGatewayEventIds.ServiceLifecycle.WorkerStarting,
         EventName = nameof(UAGatewayEventIds.ServiceLifecycle.WorkerStarting),
         Level = LogLevel.Information,
@@ -214,4 +221,39 @@ internal static partial class GatewayLogMessages
         Level = LogLevel.Information,
         Message = "Reconnect flow completed in idle state with no endpoints. CorrelationId: {CorrelationId}")]
     public static partial void ReconnectFlowIdleNoEndpoints(ILogger logger, string correlationId);
+
+    [LoggerMessage(
+        EventId = UAGatewayEventIds.LocalServerEndpoint.LocalServerStartRequested,
+        EventName = nameof(UAGatewayEventIds.LocalServerEndpoint.LocalServerStartRequested),
+        Level = LogLevel.Information,
+        Message = "Local OPC UA server endpoint start requested. CorrelationId: {CorrelationId}")]
+    public static partial void LocalServerStartRequested(ILogger logger, string correlationId);
+
+    [LoggerMessage(
+        EventId = UAGatewayEventIds.LocalServerEndpoint.LocalServerStarted,
+        EventName = nameof(UAGatewayEventIds.LocalServerEndpoint.LocalServerStarted),
+        Level = LogLevel.Information,
+        Message = "Local OPC UA server endpoint started. BaseAddress: {BaseAddress}")]
+    public static partial void LocalServerStarted(ILogger logger, string baseAddress);
+
+    [LoggerMessage(
+        EventId = UAGatewayEventIds.LocalServerEndpoint.LocalServerStartFailed,
+        EventName = nameof(UAGatewayEventIds.LocalServerEndpoint.LocalServerStartFailed),
+        Level = LogLevel.Error,
+        Message = "Local OPC UA server endpoint failed to start. Error: {ErrorMessage}")]
+    public static partial void LocalServerStartFailed(ILogger logger, string errorMessage, Exception exception);
+
+    [LoggerMessage(
+        EventId = UAGatewayEventIds.LocalServerEndpoint.LocalServerStopRequested,
+        EventName = nameof(UAGatewayEventIds.LocalServerEndpoint.LocalServerStopRequested),
+        Level = LogLevel.Information,
+        Message = "Local OPC UA server endpoint stop requested.")]
+    public static partial void LocalServerStopRequested(ILogger logger);
+
+    [LoggerMessage(
+        EventId = UAGatewayEventIds.LocalServerEndpoint.LocalServerStopped,
+        EventName = nameof(UAGatewayEventIds.LocalServerEndpoint.LocalServerStopped),
+        Level = LogLevel.Information,
+        Message = "Local OPC UA server endpoint stopped.")]
+    public static partial void LocalServerStopped(ILogger logger);
 }

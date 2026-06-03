@@ -35,4 +35,10 @@ internal sealed class GatewayWorker : BackgroundService
             await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
         }
     }
+
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        _bootstrapper.Stop();
+        await base.StopAsync(cancellationToken);
+    }
 }

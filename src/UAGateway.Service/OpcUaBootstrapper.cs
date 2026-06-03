@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Configuration;
+using Opc.Ua.Server;
 using UAGateway.Core.Configuration;
 using UAGateway.Core.Diagnostics;
 using UAGateway.Core.Health;
@@ -12,6 +13,8 @@ internal sealed class OpcUaBootstrapper
     private readonly ILogger<OpcUaBootstrapper> _logger;
     private readonly StartupHealthState _startupHealthState;
     private readonly UpstreamConnectionLifecycleManager _connectionLifecycleManager;
+    private ApplicationInstance? _localServerApplicationInstance;
+    private UAGatewayLocalServer? _localServer;
 
     public OpcUaBootstrapper(
         ILogger<OpcUaBootstrapper> logger,
@@ -50,6 +53,7 @@ internal sealed class OpcUaBootstrapper
                     applicationConfiguration.ApplicationUri ?? "unknown");
 
                 InitializeCertificateStores(applicationConfiguration);
+                StartLocalServerEndpoint(applicationConfiguration, configApplyCorrelationId);
 
                 // This confirms the OPC UA stack package is available and wired into the service.
                 var statusCode = StatusCodes.Good;
@@ -428,5 +432,68 @@ internal sealed class OpcUaBootstrapper
     {
         SecurityBootstrapDiagnosticsStore.Save(snapshot);
         GatewayLogMessages.SecurityDiagnosticsPublished(_logger, SecurityBootstrapDiagnosticsStore.DiagnosticsFilePath);
+    }
+
+    public void Stop()
+    {
+        StopLocalServerEndpoint();
+    }
+
+    private void StartLocalServerEndpoint(ApplicationConfiguration applicationConfiguration, string correlationId)
+    {
+        if (_localServerApplicationInstance is not null)
+        {
+            return;
+        }
+
+        GatewayLogMessages.LocalServerStartRequested(_logger, correlationId);
+
+        try
+        {
+            var telemetryContext = DefaultTelemetry.Create(_ => { });
+
+            _localServer = new UAGatewayLocalServer(projectedEndpointCount =>
+            {
+                GatewayLogMessages.NamespaceProjectionBuilt(_logger, projectedEndpointCount);
+            });
+            _localServerApplicationInstance = new ApplicationInstance(applicationConfiguration, telemetryContext)
+            {
+                ApplicationName = applicationConfiguration.ApplicationName,
+                ApplicationType = applicationConfiguration.ApplicationType,
+            };
+
+            _localServerApplicationInstance.StartAsync(_localServer).GetAwaiter().GetResult();
+
+            var baseAddress = applicationConfiguration.ServerConfiguration.BaseAddresses.FirstOrDefault() ?? "unknown";
+            GatewayLogMessages.LocalServerStarted(_logger, baseAddress);
+        }
+        catch (Exception ex)
+        {
+            GatewayLogMessages.LocalServerStartFailed(_logger, ex.Message, ex);
+            throw new InvalidOperationException(
+                "Local OPC UA server endpoint failed to start. Check logs for event IDs 5000-5002.",
+                ex);
+        }
+    }
+
+    private void StopLocalServerEndpoint()
+    {
+        if (_localServerApplicationInstance is null)
+        {
+            return;
+        }
+
+        GatewayLogMessages.LocalServerStopRequested(_logger);
+
+        try
+        {
+            _localServerApplicationInstance.StopAsync().GetAwaiter().GetResult();
+        }
+        finally
+        {
+            _localServer = null;
+            _localServerApplicationInstance = null;
+            GatewayLogMessages.LocalServerStopped(_logger);
+        }
     }
 }
