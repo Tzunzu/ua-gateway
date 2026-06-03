@@ -28,6 +28,15 @@ UA Gateway is an open-source Windows OPC UA gateway for PLC and SCADA environmen
 
 Current product name is `UA Gateway`. `RelayForge` is reserved as a possible future umbrella brand.
 
+## Continuity docs
+
+For continuing this project on another computer or session, start with:
+
+- [Project context](docs/PROJECT_CONTEXT.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Decisions](docs/DECISIONS.md)
+- [Roadmap](docs/ROADMAP.md)
+
 ## Next steps
 
 - Add the OPC UA stack and service hosting packages
