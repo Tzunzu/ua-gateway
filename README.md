@@ -1,5 +1,8 @@
 # UA Gateway
 
+> [!WARNING]
+> This project is under active development and is not in a working production-ready state yet.
+
 UA Gateway is an open-source Windows OPC UA gateway for PLC and SCADA environments. It connects to one or more PLCs or upstream OPC UA sources and exposes a single local OPC UA server endpoint for SCADA systems, historians, and visualization tools.
 
 ## Solution layout
