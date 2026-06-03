@@ -118,6 +118,20 @@ internal static partial class GatewayLogMessages
     public static partial void NamespaceProjectionBuilt(ILogger logger, int projectedEndpointCount);
 
     [LoggerMessage(
+        EventId = UAGatewayEventIds.MappingAndConfiguration.NamespaceMappingLoaded,
+        EventName = nameof(UAGatewayEventIds.MappingAndConfiguration.NamespaceMappingLoaded),
+        Level = LogLevel.Information,
+        Message = "Namespace mapping configuration loaded. RuleCount: {RuleCount}")]
+    public static partial void NamespaceMappingLoaded(ILogger logger, int ruleCount);
+
+    [LoggerMessage(
+        EventId = UAGatewayEventIds.MappingAndConfiguration.NamespaceMappingValidationFailed,
+        EventName = nameof(UAGatewayEventIds.MappingAndConfiguration.NamespaceMappingValidationFailed),
+        Level = LogLevel.Error,
+        Message = "Namespace mapping validation failed. EndpointId: {EndpointId}, Issue: {Issue}")]
+    public static partial void NamespaceMappingValidationFailed(ILogger logger, string endpointId, string issue);
+
+    [LoggerMessage(
         EventId = UAGatewayEventIds.ServiceLifecycle.WorkerStarting,
         EventName = nameof(UAGatewayEventIds.ServiceLifecycle.WorkerStarting),
         Level = LogLevel.Information,

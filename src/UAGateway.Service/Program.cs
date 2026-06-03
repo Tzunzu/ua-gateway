@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using UAGateway.Core.Diagnostics;
 
 namespace UAGateway.Service;
 
@@ -9,7 +10,7 @@ internal static class Program
     public static void Main(string[] args)
     {
         var host = Host.CreateApplicationBuilder(args);
-        var logDirectory = Path.Combine(AppContext.BaseDirectory, "logs");
+        var logDirectory = UAGatewayLogPaths.LogsDirectoryPath;
         Directory.CreateDirectory(logDirectory);
 
         Log.Logger = new LoggerConfiguration()

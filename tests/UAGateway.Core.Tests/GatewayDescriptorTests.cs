@@ -1,13 +1,15 @@
 namespace UAGateway.Core.Tests;
 
-public static class GatewayDescriptorTests
+using Xunit;
+
+public sealed class GatewayDescriptorTests
 {
-    public static void CanCreateDescriptor()
+    [Fact]
+    public void CanCreateDescriptor()
     {
         var descriptor = new UAGateway.Core.GatewayDescriptor("UA Gateway", "OPC UA gateway");
-        if (descriptor.Name != "UA Gateway")
-        {
-            throw new InvalidOperationException("Descriptor name mismatch.");
-        }
+
+        Assert.Equal("UA Gateway", descriptor.Name);
+        Assert.Equal("OPC UA gateway", descriptor.Description);
     }
 }

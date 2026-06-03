@@ -7,12 +7,18 @@ namespace UAGateway.Service;
 internal sealed class GatewayProjectionNodeManager : CustomNodeManager2
 {
     private readonly IList<UpstreamEndpointConfiguration> _endpoints;
+    private readonly IDictionary<string, NamespaceMappingRule> _rulesByEndpointId;
 
-    public GatewayProjectionNodeManager(IServerInternal server, ApplicationConfiguration configuration)
+    public GatewayProjectionNodeManager(
+        IServerInternal server,
+        ApplicationConfiguration configuration,
+        NamespaceMappingConfigurationDocument mapping)
         : base(server, configuration, "urn:uagateway:projection")
     {
         SystemContext.NodeIdFactory = this;
         _endpoints = UpstreamEndpointConfigurationStore.LoadOrCreateDefault().Endpoints;
+        _rulesByEndpointId = mapping.Rules
+            .ToDictionary(rule => rule.EndpointId, StringComparer.OrdinalIgnoreCase);
     }
 
     public override NodeId New(ISystemContext context, NodeState node)
@@ -46,10 +52,21 @@ internal sealed class GatewayProjectionNodeManager : CustomNodeManager2
 
         foreach (var endpoint in _endpoints)
         {
+            if (_rulesByEndpointId.TryGetValue(endpoint.Id, out var disabledRule) && !disabledRule.Enabled)
+            {
+                continue;
+            }
+
+            var projectedName = endpoint.DisplayName;
+            if (_rulesByEndpointId.TryGetValue(endpoint.Id, out var renameRule) && !string.IsNullOrWhiteSpace(renameRule.ProjectedName))
+            {
+                projectedName = renameRule.ProjectedName.Trim();
+            }
+
             var endpointFolder = CreateFolder(
                 projectionRoot,
                 endpoint.Id,
-                endpoint.DisplayName,
+                projectedName,
                 NamespaceIndex);
 
             var endpointUrlNode = CreateVariable(endpointFolder, "EndpointUrl", endpoint.EndpointUrl, DataTypeIds.String);

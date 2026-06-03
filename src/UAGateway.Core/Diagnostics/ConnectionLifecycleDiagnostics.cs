@@ -29,4 +29,26 @@ public static class ConnectionLifecycleDiagnosticsStore
         var json = JsonSerializer.Serialize(snapshot, JsonOptions);
         File.WriteAllText(DiagnosticsFilePath, json);
     }
+
+    public static bool TryLoad(out ConnectionLifecycleDiagnosticsSnapshot? snapshot)
+    {
+        snapshot = null;
+
+        if (!File.Exists(DiagnosticsFilePath))
+        {
+            return false;
+        }
+
+        try
+        {
+            var json = File.ReadAllText(DiagnosticsFilePath);
+            snapshot = JsonSerializer.Deserialize<ConnectionLifecycleDiagnosticsSnapshot>(json, JsonOptions);
+            return snapshot is not null;
+        }
+        catch
+        {
+            snapshot = null;
+            return false;
+        }
+    }
 }

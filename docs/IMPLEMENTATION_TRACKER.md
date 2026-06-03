@@ -55,12 +55,12 @@ Target: 160 to 260 hours
 
 | ID | Priority | Task | Estimate (h) | Depends On | Status | Done Criteria |
 |---|---|---|---:|---|---|---|
-| M4-01 | P3 | Implement mapping model (mirror + rename) | 20-34 | M3-05 | Todo | Mapping rules apply correctly and are persisted |
-| M4-02 | P4 | Build WinUI shell with Dashboard and Connections | 20-36 | M3-03 | Todo | Operator can view health and connection states |
-| M4-03 | P4 | Add Logs/Diagnostics view with event filtering | 18-30 | M1-03, M4-02 | Todo | Operator can filter by category/severity/event ID |
-| M4-04 | P4 | Add safe apply/reload flow in UI | 12-20 | M4-01 | Todo | Apply operations validate and show result states |
-| M4-05 | P0 | Add core regression tests for lifecycle and mapping | 24-40 | M3-02, M4-01 | Todo | Tests cover key reconnect and mapping scenarios |
-| M4-06 | P1 | Finalize operator/developer docs for V1 | 8-14 | M4-03, M4-05 | Todo | Docs cover setup, operations, and troubleshooting |
+| M4-01 | P3 | Implement mapping model (mirror + rename) | 20-34 | M3-05 | Done | Mapping rules apply correctly and are persisted |
+| M4-02 | P4 | Build WinUI shell with Dashboard and Connections | 20-36 | M3-03 | Done | Operator can view health and connection states |
+| M4-03 | P4 | Add Logs/Diagnostics view with event filtering | 18-30 | M1-03, M4-02 | Done | Operator can filter by category/severity/event ID |
+| M4-04 | P4 | Add safe apply/reload flow in UI | 12-20 | M4-01 | Done | Apply operations validate and show result states |
+| M4-05 | P0 | Add core regression tests for lifecycle and mapping | 24-40 | M3-02, M4-01 | Done | Tests cover key reconnect and mapping scenarios |
+| M4-06 | P1 | Finalize operator/developer docs for V1 | 8-14 | M4-03, M4-05 | Done | Docs cover setup, operations, and troubleshooting |
 
 ## Capacity Planning (example)
 
@@ -75,4 +75,4 @@ Use this to forecast schedule based on weekly available time.
 Start with M1-01 through M1-03 before any new feature work.
 
 Recommended first in-progress task:
-- M4-01 Implement mapping model (mirror + rename)
+- M3/M4 baseline complete; next pass should harden reliability and polish.

@@ -6,30 +6,123 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
     <Grid Padding="24">
-        <StackPanel Spacing="8">
+        <StackPanel Spacing="12">
             <TextBlock Text="UA Gateway"
                        FontSize="30"
                        FontWeight="SemiBold" />
-            <TextBlock Text="Windows frontend built with WinUI 3."
+            <TextBlock Text="Operations shell"
                        Opacity="0.75" />
 
-            <Border Margin="0,16,0,0"
-                    Padding="12"
-                    Background="#11000000"
-                    CornerRadius="8">
-                <StackPanel Spacing="4">
-                    <TextBlock Text="Security Bootstrap Diagnostics"
-                               FontWeight="SemiBold" />
-                    <TextBlock x:Name="SecurityStatusText" />
-                    <TextBlock x:Name="SecurityReasonText"
-                               TextWrapping="WrapWholeWords" />
-                    <TextBlock x:Name="SecurityCountsText" />
-                    <TextBlock x:Name="SecurityThumbprintText"
-                               TextWrapping="WrapWholeWords" />
-                    <TextBlock x:Name="SecurityUpdatedText"
-                               Opacity="0.75" />
-                </StackPanel>
-            </Border>
+            <TabView>
+                <TabViewItem Header="Dashboard">
+                    <ScrollViewer>
+                        <StackPanel Padding="12"
+                                    Spacing="12">
+                            <Border Padding="12"
+                                    Background="#11000000"
+                                    CornerRadius="8">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="Security Bootstrap"
+                                               FontWeight="SemiBold" />
+                                    <TextBlock x:Name="SecurityStatusText" />
+                                    <TextBlock x:Name="SecurityReasonText"
+                                               TextWrapping="WrapWholeWords" />
+                                    <TextBlock x:Name="SecurityCountsText" />
+                                    <TextBlock x:Name="SecurityThumbprintText"
+                                               TextWrapping="WrapWholeWords" />
+                                    <TextBlock x:Name="SecurityUpdatedText"
+                                               Opacity="0.75" />
+                                </StackPanel>
+                            </Border>
+
+                            <Border Padding="12"
+                                    Background="#11000000"
+                                    CornerRadius="8">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Text="Connection Lifecycle"
+                                               FontWeight="SemiBold" />
+                                    <TextBlock x:Name="ConnectionSummaryText" />
+                                    <TextBlock x:Name="ConnectionStateText" />
+                                    <TextBlock x:Name="ConnectionUpdatedText"
+                                               Opacity="0.75" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabViewItem>
+
+                <TabViewItem Header="Connections">
+                    <StackPanel Padding="12"
+                                Spacing="8">
+                        <TextBlock x:Name="ConnectionsHeaderText"
+                                   FontWeight="SemiBold" />
+
+                    <StackPanel Orientation="Horizontal"
+                            Spacing="8">
+                        <TextBox x:Name="DraftDisplayNameTextBox"
+                             Width="220"
+                             PlaceholderText="Display name" />
+                        <TextBox x:Name="DraftEndpointUrlTextBox"
+                             Width="320"
+                             PlaceholderText="opc.tcp://host:port/path" />
+                        <ToggleSwitch x:Name="DraftEnabledToggle"
+                              Header="Enabled"
+                              IsOn="True" />
+                        <Button Content="Add To Draft"
+                            Click="AddConnectionDraft_Click" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal"
+                            Spacing="8">
+                        <Button Content="Reload Draft"
+                            Click="ReloadConnectionsDraft_Click" />
+                        <Button Content="Apply Draft"
+                            Click="ApplyConnectionsDraft_Click" />
+                    </StackPanel>
+
+                    <TextBlock x:Name="ConnectionsApplyStatusText"
+                           TextWrapping="WrapWholeWords"
+                           Opacity="0.8" />
+
+                        <ListView x:Name="ConnectionsList"
+                                  Height="360" />
+                    </StackPanel>
+                </TabViewItem>
+
+                <TabViewItem Header="Logs">
+                    <StackPanel Padding="12"
+                                Spacing="8">
+                        <TextBlock Text="Diagnostics log filters"
+                                   FontWeight="SemiBold" />
+
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="8">
+                            <ComboBox x:Name="SeverityFilterComboBox"
+                                      Width="160"
+                                      SelectedIndex="0">
+                                <x:String>All Severities</x:String>
+                                <x:String>Information</x:String>
+                                <x:String>Warning</x:String>
+                                <x:String>Error</x:String>
+                                <x:String>Critical</x:String>
+                            </ComboBox>
+                            <TextBox x:Name="CategoryFilterTextBox"
+                                     Width="220"
+                                     PlaceholderText="Category contains..." />
+                            <TextBox x:Name="EventIdFilterTextBox"
+                                     Width="180"
+                                     PlaceholderText="Event ID contains..." />
+                            <Button Content="Apply"
+                                    Click="ApplyLogFilters_Click" />
+                        </StackPanel>
+
+                        <TextBlock x:Name="LogsSummaryText"
+                                   Opacity="0.75" />
+                        <ListView x:Name="LogsList"
+                                  Height="320" />
+                    </StackPanel>
+                </TabViewItem>
+            </TabView>
         </StackPanel>
     </Grid>
 </Window>

@@ -43,6 +43,7 @@ internal sealed class OpcUaBootstrapper
 
                 var applicationConfiguration = BuildApplicationConfiguration();
                 var upstreamEndpointConfiguration = LoadValidatedUpstreamEndpointConfiguration();
+                var mappingConfiguration = LoadValidatedMappingConfiguration(upstreamEndpointConfiguration);
                 var enabledEndpointCount = upstreamEndpointConfiguration.Endpoints.Count(endpoint => endpoint.Enabled);
                 _connectionLifecycleManager.SetApplicationConfiguration(applicationConfiguration);
                 _connectionLifecycleManager.ApplyConfiguration(upstreamEndpointConfiguration);
@@ -53,7 +54,7 @@ internal sealed class OpcUaBootstrapper
                     applicationConfiguration.ApplicationUri ?? "unknown");
 
                 InitializeCertificateStores(applicationConfiguration);
-                StartLocalServerEndpoint(applicationConfiguration, configApplyCorrelationId);
+                StartLocalServerEndpoint(applicationConfiguration, mappingConfiguration, configApplyCorrelationId);
 
                 // This confirms the OPC UA stack package is available and wired into the service.
                 var statusCode = StatusCodes.Good;
@@ -428,6 +429,27 @@ internal sealed class OpcUaBootstrapper
             "Upstream endpoint configuration failed validation. Fix config/upstream-endpoints.json and restart.");
     }
 
+    private NamespaceMappingConfigurationDocument LoadValidatedMappingConfiguration(
+        UpstreamEndpointConfigurationDocument upstreamEndpointConfiguration)
+    {
+        var mapping = NamespaceMappingConfigurationStore.LoadOrCreateDefault();
+        GatewayLogMessages.NamespaceMappingLoaded(_logger, mapping.Rules.Count);
+
+        var issues = NamespaceMappingConfigurationValidator.Validate(mapping, upstreamEndpointConfiguration);
+        if (issues.Count == 0)
+        {
+            return mapping;
+        }
+
+        foreach (var issue in issues)
+        {
+            GatewayLogMessages.NamespaceMappingValidationFailed(_logger, issue.EndpointId, issue.Message);
+        }
+
+        throw new InvalidOperationException(
+            "Namespace mapping configuration failed validation. Fix config/namespace-mapping.json and restart.");
+    }
+
     private void PublishSecurityDiagnosticsSnapshot(SecurityBootstrapDiagnosticsSnapshot snapshot)
     {
         SecurityBootstrapDiagnosticsStore.Save(snapshot);
@@ -439,7 +461,10 @@ internal sealed class OpcUaBootstrapper
         StopLocalServerEndpoint();
     }
 
-    private void StartLocalServerEndpoint(ApplicationConfiguration applicationConfiguration, string correlationId)
+    private void StartLocalServerEndpoint(
+        ApplicationConfiguration applicationConfiguration,
+        NamespaceMappingConfigurationDocument mappingConfiguration,
+        string correlationId)
     {
         if (_localServerApplicationInstance is not null)
         {
@@ -452,7 +477,7 @@ internal sealed class OpcUaBootstrapper
         {
             var telemetryContext = DefaultTelemetry.Create(_ => { });
 
-            _localServer = new UAGatewayLocalServer(projectedEndpointCount =>
+            _localServer = new UAGatewayLocalServer(mappingConfiguration, projectedEndpointCount =>
             {
                 GatewayLogMessages.NamespaceProjectionBuilt(_logger, projectedEndpointCount);
             });

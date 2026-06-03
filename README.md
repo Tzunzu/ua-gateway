@@ -39,6 +39,7 @@ For continuing this project on another computer or session, start with:
 - [Priorities](docs/PRIORITIES.md)
 - [Tooling, debug, and event plan](docs/TOOLING_DEBUG_EVENT_PLAN.md)
 - [Debug runbook](docs/DEBUG_RUNBOOK.md)
+- [Operations and developer guide](docs/OPERATIONS_AND_DEV_GUIDE.md)
 - [Implementation tracker](docs/IMPLEMENTATION_TRACKER.md)
 - [Roadmap](docs/ROADMAP.md)
 

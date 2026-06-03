@@ -51,6 +51,8 @@ public static class UAGatewayEventIds
         public const int UpstreamEndpointConfigurationLoaded = 4005;
         public const int UpstreamEndpointConfigurationValidationFailed = 4006;
         public const int NamespaceProjectionBuilt = 4007;
+        public const int NamespaceMappingLoaded = 4008;
+        public const int NamespaceMappingValidationFailed = 4009;
         public const int ReservedStart = 4000;
         public const int ReservedEnd = 4299;
     }
