@@ -6,6 +6,20 @@ namespace UAGateway.Service;
 internal static partial class GatewayLogMessages
 {
     [LoggerMessage(
+        EventId = UAGatewayEventIds.MappingAndConfiguration.ConfigApplyStarted,
+        EventName = nameof(UAGatewayEventIds.MappingAndConfiguration.ConfigApplyStarted),
+        Level = LogLevel.Information,
+        Message = "Configuration apply flow started. CorrelationId: {CorrelationId}")]
+    public static partial void ConfigApplyStarted(ILogger logger, string correlationId);
+
+    [LoggerMessage(
+        EventId = UAGatewayEventIds.MappingAndConfiguration.ConfigApplyCompleted,
+        EventName = nameof(UAGatewayEventIds.MappingAndConfiguration.ConfigApplyCompleted),
+        Level = LogLevel.Information,
+        Message = "Configuration apply flow completed. CorrelationId: {CorrelationId}")]
+    public static partial void ConfigApplyCompleted(ILogger logger, string correlationId);
+
+    [LoggerMessage(
         EventId = UAGatewayEventIds.ServiceLifecycle.WorkerStarting,
         EventName = nameof(UAGatewayEventIds.ServiceLifecycle.WorkerStarting),
         Level = LogLevel.Information,
@@ -41,9 +55,23 @@ internal static partial class GatewayLogMessages
     public static partial void ConnectionManagerInitialized(ILogger logger);
 
     [LoggerMessage(
+        EventId = UAGatewayEventIds.ConnectionLifecycle.ReconnectFlowStarted,
+        EventName = nameof(UAGatewayEventIds.ConnectionLifecycle.ReconnectFlowStarted),
+        Level = LogLevel.Information,
+        Message = "Reconnect flow started. CorrelationId: {CorrelationId}")]
+    public static partial void ReconnectFlowStarted(ILogger logger, string correlationId);
+
+    [LoggerMessage(
         EventId = UAGatewayEventIds.ConnectionLifecycle.NoUpstreamEndpointsConfigured,
         EventName = nameof(UAGatewayEventIds.ConnectionLifecycle.NoUpstreamEndpointsConfigured),
         Level = LogLevel.Warning,
-        Message = "No upstream endpoints are configured yet; connection lifecycle remains idle.")]
-    public static partial void NoUpstreamEndpointsConfigured(ILogger logger);
+        Message = "No upstream endpoints are configured yet; connection lifecycle remains idle. CorrelationId: {CorrelationId}")]
+    public static partial void NoUpstreamEndpointsConfigured(ILogger logger, string correlationId);
+
+    [LoggerMessage(
+        EventId = UAGatewayEventIds.ConnectionLifecycle.ReconnectFlowIdleNoEndpoints,
+        EventName = nameof(UAGatewayEventIds.ConnectionLifecycle.ReconnectFlowIdleNoEndpoints),
+        Level = LogLevel.Information,
+        Message = "Reconnect flow completed in idle state with no endpoints. CorrelationId: {CorrelationId}")]
+    public static partial void ReconnectFlowIdleNoEndpoints(ILogger logger, string correlationId);
 }

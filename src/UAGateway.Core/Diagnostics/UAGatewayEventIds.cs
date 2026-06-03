@@ -14,6 +14,8 @@ public static class UAGatewayEventIds
     {
         public const int ConnectionManagerInitialized = 2000;
         public const int NoUpstreamEndpointsConfigured = 2001;
+        public const int ReconnectFlowStarted = 2002;
+        public const int ReconnectFlowIdleNoEndpoints = 2003;
         public const int ReservedStart = 2000;
         public const int ReservedEnd = 2199;
     }
@@ -26,6 +28,8 @@ public static class UAGatewayEventIds
 
     public static class MappingAndConfiguration
     {
+        public const int ConfigApplyStarted = 4000;
+        public const int ConfigApplyCompleted = 4001;
         public const int ReservedStart = 4000;
         public const int ReservedEnd = 4299;
     }
