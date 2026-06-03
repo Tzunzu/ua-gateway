@@ -48,6 +48,13 @@ internal static partial class GatewayLogMessages
     public static partial void UntrustedCertificateRejected(ILogger logger, string thumbprint, uint statusCode);
 
     [LoggerMessage(
+        EventId = UAGatewayEventIds.SecurityAndTrust.SecurityDiagnosticsPublished,
+        EventName = nameof(UAGatewayEventIds.SecurityAndTrust.SecurityDiagnosticsPublished),
+        Level = LogLevel.Information,
+        Message = "Security diagnostics snapshot published at {Path}.")]
+    public static partial void SecurityDiagnosticsPublished(ILogger logger, string path);
+
+    [LoggerMessage(
         EventId = UAGatewayEventIds.SecurityAndTrust.SecurityBootstrapFailed,
         EventName = nameof(UAGatewayEventIds.SecurityAndTrust.SecurityBootstrapFailed),
         Level = LogLevel.Error,

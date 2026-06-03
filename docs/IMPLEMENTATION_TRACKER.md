@@ -35,7 +35,7 @@ Target: 90 to 140 hours
 | M2-02 | P2 | Implement certificate store initialization | 10-16 | M2-01 | Done | App creates/loads certs and logs trust state |
 | M2-03 | P2 | Implement trust list handling and policy defaults | 12-20 | M2-02 | Done | Trusted/untrusted states are explicit and enforced |
 | M2-04 | P0 | Add startup health state model | 8-12 | M2-01 | Done | Service reports healthy/degraded/faulted with reasons |
-| M2-05 | P1 | Add security and bootstrap diagnostics to UI contract | 8-14 | M2-03 | Todo | UI can query cert and bootstrap status safely |
+| M2-05 | P1 | Add security and bootstrap diagnostics to UI contract | 8-14 | M2-03 | Done | UI can query cert and bootstrap status safely |
 
 ## Milestone M3: Connection Manager and Local Server Path
 
@@ -75,4 +75,4 @@ Use this to forecast schedule based on weekly available time.
 Start with M1-01 through M1-03 before any new feature work.
 
 Recommended first in-progress task:
-- M2-05 Add security and bootstrap diagnostics to UI contract
+- M3-01 Implement upstream endpoint config model

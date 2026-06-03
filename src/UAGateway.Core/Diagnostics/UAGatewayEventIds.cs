@@ -30,6 +30,7 @@ public static class UAGatewayEventIds
         public const int TrustPolicyDefaultsApplied = 3004;
         public const int NoTrustedPeersConfigured = 3005;
         public const int UntrustedCertificateRejected = 3006;
+        public const int SecurityDiagnosticsPublished = 3007;
         public const int ReservedStart = 3000;
         public const int ReservedEnd = 3199;
     }

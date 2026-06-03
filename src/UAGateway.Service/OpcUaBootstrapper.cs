@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Configuration;
+using UAGateway.Core.Diagnostics;
 using UAGateway.Core.Health;
 
 namespace UAGateway.Service;
@@ -74,6 +75,19 @@ internal sealed class OpcUaBootstrapper
                 StartupHealthStatus.Faulted,
                 $"Startup failed: {ex.Message}",
                 faultCorrelationId);
+
+            PublishSecurityDiagnosticsSnapshot(new SecurityBootstrapDiagnosticsSnapshot(
+                SecurityBootstrapStatus.Faulted,
+                $"Startup failed: {ex.Message}",
+                DateTimeOffset.UtcNow,
+                faultCorrelationId,
+                null,
+                0,
+                0,
+                0,
+                false,
+                true,
+                2048));
 
             throw;
         }
@@ -245,10 +259,45 @@ internal sealed class OpcUaBootstrapper
                 {
                     GatewayLogMessages.NoTrustedPeersConfigured(_logger);
                 }
+
+                var status = trustedPeerCount == 0
+                    ? SecurityBootstrapStatus.Degraded
+                    : SecurityBootstrapStatus.Healthy;
+
+                var reason = trustedPeerCount == 0
+                    ? "Security bootstrap succeeded, but trust list has no trusted peers yet."
+                    : "Security bootstrap succeeded with trusted peers configured.";
+
+                PublishSecurityDiagnosticsSnapshot(new SecurityBootstrapDiagnosticsSnapshot(
+                    status,
+                    reason,
+                    DateTimeOffset.UtcNow,
+                    securityCorrelationId,
+                    certificate?.Thumbprint,
+                    trustedPeerCount,
+                    trustedIssuerCount,
+                    rejectedCount,
+                    applicationConfiguration.SecurityConfiguration.AutoAcceptUntrustedCertificates,
+                    applicationConfiguration.SecurityConfiguration.RejectSHA1SignedCertificates,
+                    applicationConfiguration.SecurityConfiguration.MinimumCertificateKeySize));
             }
             catch (Exception ex)
             {
                 GatewayLogMessages.SecurityBootstrapFailed(_logger, ex.Message, ex);
+
+                PublishSecurityDiagnosticsSnapshot(new SecurityBootstrapDiagnosticsSnapshot(
+                    SecurityBootstrapStatus.Faulted,
+                    $"Certificate bootstrap failed: {ex.Message}",
+                    DateTimeOffset.UtcNow,
+                    securityCorrelationId,
+                    null,
+                    0,
+                    0,
+                    0,
+                    false,
+                    true,
+                    2048));
+
                 throw new InvalidOperationException(
                     "OPC UA certificate bootstrap failed at startup. Check logs for event ID 3003 and error details.",
                     ex);
@@ -316,5 +365,11 @@ internal sealed class OpcUaBootstrapper
             snapshot.Status.ToString(),
             snapshot.Reason,
             snapshot.CorrelationId ?? correlationId);
+    }
+
+    private void PublishSecurityDiagnosticsSnapshot(SecurityBootstrapDiagnosticsSnapshot snapshot)
+    {
+        SecurityBootstrapDiagnosticsStore.Save(snapshot);
+        GatewayLogMessages.SecurityDiagnosticsPublished(_logger, SecurityBootstrapDiagnosticsStore.DiagnosticsFilePath);
     }
 }
