@@ -1,0 +1,49 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+artifacts/
+
+# User-specific files
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+*.cache
+
+# Visual Studio / tooling
+.vs/
+*.VC.db
+*.VC.opendb
+
+# VS Code
+.vscode/*.log
+
+# Keep shared project tasks and debug configs tracked
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+
+# Test output and coverage
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+
+# WinUI / MSIX packaging output
+AppPackages/
+BundleArtifacts/
+Package.StoreAssociation.xml
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

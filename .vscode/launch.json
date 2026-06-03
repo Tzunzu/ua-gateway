@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch UAGateway Service",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "Build UAGateway",
+      "program": "${workspaceFolder}/src/UAGateway.Service/bin/Debug/net8.0/UAGateway.Service.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "stopAtEntry": false
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Restore UAGateway",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"restore",
+				"UAGateway.sln"
+			],
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Build UAGateway",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"build",
+				"UAGateway.sln"
+			],
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Test UAGateway",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"test",
+				"UAGateway.sln"
+			],
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "test"
+		},
+		{
+			"label": "Run UAGateway Service",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"run",
+				"--project",
+				"src/UAGateway.Service/UAGateway.Service.csproj"
+			],
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
+			"label": "Run UAGateway UI",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"run",
+				"--project",
+				"src/UAGateway.UI/UAGateway.UI.csproj"
+			],
+			"problemMatcher": [],
+			"group": "none"
+		}
+	]
+}
