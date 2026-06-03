@@ -47,3 +47,7 @@ Work on higher priorities first. Lower-priority tasks should not block progress 
 - Reserve at least 20 to 30 percent of weekly time for reliability, tooling, and diagnostics work.
 - Do not defer observability until late milestones.
 - Treat bug triage and incident reproducibility as first-class engineering work.
+
+## Execution tracker
+
+- Use [Implementation tracker](IMPLEMENTATION_TRACKER.md) as the active task board with task IDs, dependencies, and done criteria.

@@ -38,6 +38,7 @@ For continuing this project on another computer or session, start with:
 - [V1 scope contract](docs/V1_SCOPE.md)
 - [Priorities](docs/PRIORITIES.md)
 - [Tooling, debug, and event plan](docs/TOOLING_DEBUG_EVENT_PLAN.md)
+- [Implementation tracker](docs/IMPLEMENTATION_TRACKER.md)
 - [Roadmap](docs/ROADMAP.md)
 
 ## Next steps
