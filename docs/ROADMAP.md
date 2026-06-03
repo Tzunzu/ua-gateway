@@ -6,26 +6,31 @@ Scaffold and foundation. Build and test are running. Runtime bootstrap is minima
 
 ## Near-Term Milestones
 
-1. OPC UA Runtime Bootstrap
+1. Tooling and debug foundation
+- Lock the local engineering loop (restore/build/test/run)
+- Define initial structured logging categories and event ID ranges
+- Create baseline troubleshooting workflow and documentation
+
+2. OPC UA Runtime Bootstrap
 - Add full ApplicationConfiguration
 - Add certificate store and trust setup
 - Validate startup configuration path
 
-2. Connection Management
+3. Connection Management
 - Add upstream endpoint configuration model
 - Implement connect/reconnect lifecycle handling
 - Add health status model
 
-3. Local Server Exposure
+4. Local Server Exposure
 - Stand up local OPC UA server endpoint
 - Define and host initial namespace structure
 
-4. UI Shell and Operations Views
+5. UI Shell and Operations Views
 - Create navigation shell (WinUI 3)
 - Add Dashboard and Connections views
 - Show service state and connection health
 
-5. Service/UI Contract
+6. Service/UI Contract
 - Define initial API/IPC contract for status and config
 - Implement safe apply/reload workflow
 

@@ -35,6 +35,9 @@ For continuing this project on another computer or session, start with:
 - [Project context](docs/PROJECT_CONTEXT.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Decisions](docs/DECISIONS.md)
+- [V1 scope contract](docs/V1_SCOPE.md)
+- [Priorities](docs/PRIORITIES.md)
+- [Tooling, debug, and event plan](docs/TOOLING_DEBUG_EVENT_PLAN.md)
 - [Roadmap](docs/ROADMAP.md)
 
 ## Next steps
