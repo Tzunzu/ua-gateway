@@ -1,0 +1,27 @@
+#!/usr/bin/env sh
+
+# Enforced reminder before push. Set SKIP_PUSH_CHECK=1 to bypass.
+if [ "$SKIP_PUSH_CHECK" = "1" ]; then
+  exit 0
+fi
+
+echo ""
+echo "Pre-push checklist for UA Gateway"
+echo "1. Build and tests are green"
+echo "2. docs/IMPLEMENTATION_TRACKER.md updated if scope/status changed"
+echo "3. Relevant docs updated (architecture, ops, testing, roadmap)"
+echo "4. New behavior has tests or explicit justification"
+echo ""
+echo "Checklist reference: docs/PUSH_CHECKLIST.md"
+printf "Continue with push? [y/N]: "
+read answer
+
+case "$answer" in
+  y|Y|yes|YES)
+    exit 0
+    ;;
+  *)
+    echo "Push cancelled. Complete checklist or bypass once with SKIP_PUSH_CHECK=1 git push ..."
+    exit 1
+    ;;
+esac

@@ -1,5 +1,7 @@
 # Implementation Tracker
 
+Last Updated: 2026-06-03
+
 ## How to use this file
 
 - Track progress by task ID.
@@ -89,14 +91,17 @@ Purpose: lock the application layout, screen structure, and operator task flow e
 
 | ID | Priority | Task | Estimate (h) | Depends On | Status | Done Criteria |
 |---|---|---|---:|---|---|---|
-| M5-01 | P4 | Define the real WinUI information architecture | 8-14 | M4-02 | In Progress | Primary sections, navigation model, and page responsibilities are documented and reflected in the shell |
-| M5-02 | P4 | Build the real shell layout and page structure | 12-20 | M5-01 | Todo | Window layout, navigation, and page composition match the intended operator workflow |
-| M5-03 | P4 | Define UI state model and service-facing contracts | 8-14 | M5-01 | In Progress | UI state boundaries are documented and transient UI state is separated from service-owned state |
-| M5-04 | P4 | Design safe operator flows for config apply/reload and diagnostics | 8-16 | M5-02, M5-03 | Todo | Apply, reload, startup status, and failure states have clear UI flows and visible outcomes |
+| M5-01 | P4 | Define the real WinUI information architecture | 8-14 | M4-02 | Done | Primary sections, navigation model, and page responsibilities are documented and reflected in the shell |
+| M5-02 | P4 | Build the real shell layout and page structure | 12-20 | M5-01 | Done | Window layout, navigation, and page composition match the intended operator workflow |
+| M5-03 | P4 | Define UI state model and service-facing contracts | 8-14 | M5-01 | Done | UI state boundaries are documented and transient UI state is separated from service-owned state |
+| M5-04 | P4 | Design safe operator flows for config apply/reload and diagnostics | 8-16 | M5-02, M5-03 | In Progress | Apply, reload, startup status, and failure states have clear UI flows and visible outcomes |
 | M5-05 | P1 | Add UI smoke-test checklist for local validation | 4-8 | M5-04 | Todo | Repeatable checklist exists for launch, navigation, diagnostics load, and config flow checks |
 
-Progress note for M5-03:
-- Initial service/UI IPC contract draft with handshake, snapshots, commands, and event stream envelopes added in SERVICE_UI_IPC_CONTRACT_DRAFT.md.
+Progress notes for M5:
+- WinUI shell moved to modular controls (`DashboardOverview`, `ConnectionsEditor`, `LogsViewer`, `LiveOutputViewer`) with top-level navigation and bottom status bar.
+- Service/UI IPC contract implemented in shared Core (`src/UAGateway.Core/Ipc/IpcContract.cs`) with handshake, startup health, security bootstrap, and connection snapshot methods.
+- Service now hosts control and event named-pipe endpoints and UI consumes both channels for status + live output.
+- Live Output is event-stream-first and now rendered as append-only terminal-style text.
 
 ## Milestone M6: Runtime Bootstrap and Security Hardening Pass
 
@@ -155,6 +160,6 @@ Purpose: close the gap between a developer scaffold and a repeatable V1 engineer
 Baseline scaffold work is complete; use the second-pass milestones above as the active plan.
 
 Recommended first in-progress task:
-- Start with M5-01 and M5-02 to lock the UI structure and operator flow.
-- Use M5-03 to define the service/UI state boundary before expanding runtime-facing UI features.
-- Once the UI structure is stable, move immediately to M6 and M7 hardening rather than broad UI polish.
+- Finish M5-04 by validating and polishing operator flows (apply/reload, startup status handling, diagnostics outcomes) across normal and degraded cases.
+- Complete M5-05 with a repeatable local UI smoke-test checklist.
+- Then move directly to M6-01 and M6-03 for startup validation hardening and explicit healthy/degraded/faulted semantics.

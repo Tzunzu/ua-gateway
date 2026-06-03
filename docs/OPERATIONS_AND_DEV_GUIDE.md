@@ -20,6 +20,22 @@ Use the VS Code tasks provided in this repository:
 - Run service: `Run UAGateway Service`
 - Run UI: `Run UAGateway UI`
 
+## Pre-push Reminder Setup
+
+Enable repository-managed hooks once per clone:
+
+`git config core.hooksPath .githooks`
+
+After this, each push shows a checklist prompt before continuing.
+
+Checklist reference:
+
+- `docs/PUSH_CHECKLIST.md`
+
+One-time bypass (use rarely):
+
+`SKIP_PUSH_CHECK=1 git push`
+
 ## Baseline Runtime Behavior
 
 At startup the service:
