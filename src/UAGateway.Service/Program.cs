@@ -25,6 +25,7 @@ internal static class Program
 
         host.Services.AddSerilog(Log.Logger, dispose: true);
         host.Services.AddWindowsService();
+        host.Services.AddSingleton<StartupHealthState>();
         host.Services.AddSingleton<OpcUaBootstrapper>();
         host.Services.AddHostedService<GatewayWorker>();
 

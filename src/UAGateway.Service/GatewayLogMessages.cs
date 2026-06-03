@@ -6,6 +6,76 @@ namespace UAGateway.Service;
 internal static partial class GatewayLogMessages
 {
     [LoggerMessage(
+        EventId = UAGatewayEventIds.SecurityAndTrust.SecurityBootstrapStarted,
+        EventName = nameof(UAGatewayEventIds.SecurityAndTrust.SecurityBootstrapStarted),
+        Level = LogLevel.Information,
+        Message = "Security bootstrap started. CorrelationId: {CorrelationId}")]
+    public static partial void SecurityBootstrapStarted(ILogger logger, string correlationId);
+
+    [LoggerMessage(
+        EventId = UAGatewayEventIds.SecurityAndTrust.ApplicationCertificateReady,
+        EventName = nameof(UAGatewayEventIds.SecurityAndTrust.ApplicationCertificateReady),
+        Level = LogLevel.Information,
+        Message = "Application certificate is available. Thumbprint: {Thumbprint}")]
+    public static partial void ApplicationCertificateReady(ILogger logger, string thumbprint);
+
+    [LoggerMessage(
+        EventId = UAGatewayEventIds.SecurityAndTrust.TrustStoreStateObserved,
+        EventName = nameof(UAGatewayEventIds.SecurityAndTrust.TrustStoreStateObserved),
+        Level = LogLevel.Information,
+        Message = "Trust store state observed. TrustedPeerCount: {TrustedPeerCount}, TrustedIssuerCount: {TrustedIssuerCount}, RejectedCount: {RejectedCount}")]
+    public static partial void TrustStoreStateObserved(ILogger logger, int trustedPeerCount, int trustedIssuerCount, int rejectedCount);
+
+    [LoggerMessage(
+        EventId = UAGatewayEventIds.SecurityAndTrust.TrustPolicyDefaultsApplied,
+        EventName = nameof(UAGatewayEventIds.SecurityAndTrust.TrustPolicyDefaultsApplied),
+        Level = LogLevel.Information,
+        Message = "Trust policy defaults applied. AutoAcceptUntrusted: {AutoAcceptUntrusted}, RejectSha1: {RejectSha1}, MinimumKeySize: {MinimumKeySize}")]
+    public static partial void TrustPolicyDefaultsApplied(ILogger logger, bool autoAcceptUntrusted, bool rejectSha1, ushort minimumKeySize);
+
+    [LoggerMessage(
+        EventId = UAGatewayEventIds.SecurityAndTrust.NoTrustedPeersConfigured,
+        EventName = nameof(UAGatewayEventIds.SecurityAndTrust.NoTrustedPeersConfigured),
+        Level = LogLevel.Warning,
+        Message = "No trusted peer certificates are configured. New peers will remain untrusted until explicitly added.")]
+    public static partial void NoTrustedPeersConfigured(ILogger logger);
+
+    [LoggerMessage(
+        EventId = UAGatewayEventIds.SecurityAndTrust.UntrustedCertificateRejected,
+        EventName = nameof(UAGatewayEventIds.SecurityAndTrust.UntrustedCertificateRejected),
+        Level = LogLevel.Warning,
+        Message = "Untrusted certificate rejected. Thumbprint: {Thumbprint}, StatusCode: {StatusCode}")]
+    public static partial void UntrustedCertificateRejected(ILogger logger, string thumbprint, uint statusCode);
+
+    [LoggerMessage(
+        EventId = UAGatewayEventIds.SecurityAndTrust.SecurityBootstrapFailed,
+        EventName = nameof(UAGatewayEventIds.SecurityAndTrust.SecurityBootstrapFailed),
+        Level = LogLevel.Error,
+        Message = "Security bootstrap failed. Error: {ErrorMessage}")]
+    public static partial void SecurityBootstrapFailed(ILogger logger, string errorMessage, Exception exception);
+
+    [LoggerMessage(
+        EventId = UAGatewayEventIds.MappingAndConfiguration.OpcUaConfigurationBuildStarted,
+        EventName = nameof(UAGatewayEventIds.MappingAndConfiguration.OpcUaConfigurationBuildStarted),
+        Level = LogLevel.Information,
+        Message = "OPC UA application configuration build started. CorrelationId: {CorrelationId}")]
+    public static partial void OpcUaConfigurationBuildStarted(ILogger logger, string correlationId);
+
+    [LoggerMessage(
+        EventId = UAGatewayEventIds.MappingAndConfiguration.OpcUaConfigurationValidated,
+        EventName = nameof(UAGatewayEventIds.MappingAndConfiguration.OpcUaConfigurationValidated),
+        Level = LogLevel.Information,
+        Message = "OPC UA application configuration validated. ApplicationUri: {ApplicationUri}")]
+    public static partial void OpcUaConfigurationValidated(ILogger logger, string applicationUri);
+
+    [LoggerMessage(
+        EventId = UAGatewayEventIds.MappingAndConfiguration.OpcUaConfigurationValidationFailed,
+        EventName = nameof(UAGatewayEventIds.MappingAndConfiguration.OpcUaConfigurationValidationFailed),
+        Level = LogLevel.Error,
+        Message = "OPC UA application configuration validation failed. Error: {ErrorMessage}")]
+    public static partial void OpcUaConfigurationValidationFailed(ILogger logger, string errorMessage, Exception exception);
+
+    [LoggerMessage(
         EventId = UAGatewayEventIds.MappingAndConfiguration.ConfigApplyStarted,
         EventName = nameof(UAGatewayEventIds.MappingAndConfiguration.ConfigApplyStarted),
         Level = LogLevel.Information,
@@ -46,6 +116,13 @@ internal static partial class GatewayLogMessages
         Level = LogLevel.Information,
         Message = "OPC UA stack initialized. Baseline status code: {StatusCode}")]
     public static partial void OpcUaBootstrapInitialized(ILogger logger, uint statusCode);
+
+    [LoggerMessage(
+        EventId = UAGatewayEventIds.ServiceLifecycle.StartupHealthStateChanged,
+        EventName = nameof(UAGatewayEventIds.ServiceLifecycle.StartupHealthStateChanged),
+        Level = LogLevel.Information,
+        Message = "Startup health state changed. Status: {Status}, Reason: {Reason}, CorrelationId: {CorrelationId}")]
+    public static partial void StartupHealthStateChanged(ILogger logger, string status, string reason, string correlationId);
 
     [LoggerMessage(
         EventId = UAGatewayEventIds.ConnectionLifecycle.ConnectionManagerInitialized,

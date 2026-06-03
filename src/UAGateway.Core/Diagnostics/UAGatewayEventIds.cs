@@ -8,6 +8,7 @@ public static class UAGatewayEventIds
         public const int WorkerStarted = 1001;
         public const int WorkerHeartbeat = 1002;
         public const int OpcUaBootstrapInitialized = 1003;
+        public const int StartupHealthStateChanged = 1004;
     }
 
     public static class ConnectionLifecycle
@@ -22,6 +23,13 @@ public static class UAGatewayEventIds
 
     public static class SecurityAndTrust
     {
+        public const int SecurityBootstrapStarted = 3000;
+        public const int ApplicationCertificateReady = 3001;
+        public const int TrustStoreStateObserved = 3002;
+        public const int SecurityBootstrapFailed = 3003;
+        public const int TrustPolicyDefaultsApplied = 3004;
+        public const int NoTrustedPeersConfigured = 3005;
+        public const int UntrustedCertificateRejected = 3006;
         public const int ReservedStart = 3000;
         public const int ReservedEnd = 3199;
     }
@@ -30,6 +38,9 @@ public static class UAGatewayEventIds
     {
         public const int ConfigApplyStarted = 4000;
         public const int ConfigApplyCompleted = 4001;
+        public const int OpcUaConfigurationBuildStarted = 4002;
+        public const int OpcUaConfigurationValidated = 4003;
+        public const int OpcUaConfigurationValidationFailed = 4004;
         public const int ReservedStart = 4000;
         public const int ReservedEnd = 4299;
     }
