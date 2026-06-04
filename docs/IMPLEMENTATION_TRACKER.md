@@ -95,13 +95,15 @@ Purpose: lock the application layout, screen structure, and operator task flow e
 | M5-02 | P4 | Build the real shell layout and page structure | 12-20 | M5-01 | Done | Window layout, navigation, and page composition match the intended operator workflow |
 | M5-03 | P4 | Define UI state model and service-facing contracts | 8-14 | M5-01 | Done | UI state boundaries are documented and transient UI state is separated from service-owned state |
 | M5-04 | P4 | Design safe operator flows for config apply/reload and diagnostics | 8-16 | M5-02, M5-03 | In Progress | Apply, reload, startup status, and failure states have clear UI flows and visible outcomes |
-| M5-05 | P1 | Add UI smoke-test checklist for local validation | 4-8 | M5-04 | Todo | Repeatable checklist exists for launch, navigation, diagnostics load, and config flow checks |
+| M5-05 | P1 | Add UI smoke-test checklist for local validation | 4-8 | M5-04 | Done | Repeatable checklist exists for launch, navigation, diagnostics load, and config flow checks |
 
 Progress notes for M5:
 - WinUI shell moved to modular controls (`DashboardOverview`, `ConnectionsEditor`, `LogsViewer`, `LiveOutputViewer`) with top-level navigation and bottom status bar.
 - Service/UI IPC contract implemented in shared Core (`src/UAGateway.Core/Ipc/IpcContract.cs`) with handshake, startup health, security bootstrap, and connection snapshot methods.
 - Service now hosts control and event named-pipe endpoints and UI consumes both channels for status + live output.
 - Live Output is event-stream-first and now rendered as append-only terminal-style text.
+- M5-04 flow decomposition captured in `docs/M5_04_OPERATOR_FLOW_BLUEPRINT.md` as small execution blocks with acceptance criteria.
+- M5-05 checklist published in `docs/UI_SMOKE_CHECKLIST.md` for repeatable 15-minute local validation.
 
 ## Milestone M6: Runtime Bootstrap and Security Hardening Pass
 
