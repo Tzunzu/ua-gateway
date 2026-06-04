@@ -1,6 +1,6 @@
 # Implementation Tracker
 
-Last Updated: 2026-06-03
+Last Updated: 2026-06-04
 
 ## How to use this file
 
@@ -94,7 +94,7 @@ Purpose: lock the application layout, screen structure, and operator task flow e
 | M5-01 | P4 | Define the real WinUI information architecture | 8-14 | M4-02 | Done | Primary sections, navigation model, and page responsibilities are documented and reflected in the shell |
 | M5-02 | P4 | Build the real shell layout and page structure | 12-20 | M5-01 | Done | Window layout, navigation, and page composition match the intended operator workflow |
 | M5-03 | P4 | Define UI state model and service-facing contracts | 8-14 | M5-01 | Done | UI state boundaries are documented and transient UI state is separated from service-owned state |
-| M5-04 | P4 | Design safe operator flows for config apply/reload and diagnostics | 8-16 | M5-02, M5-03 | In Progress | Apply, reload, startup status, and failure states have clear UI flows and visible outcomes |
+| M5-04 | P4 | Design safe operator flows for config apply/reload and diagnostics | 8-16 | M5-02, M5-03 | Done | Apply, reload, startup status, and failure states have clear UI flows and visible outcomes |
 | M5-05 | P1 | Add UI smoke-test checklist for local validation | 4-8 | M5-04 | Done | Repeatable checklist exists for launch, navigation, diagnostics load, and config flow checks |
 
 Progress notes for M5:
@@ -104,6 +104,10 @@ Progress notes for M5:
 - Live Output is event-stream-first and now rendered as append-only terminal-style text.
 - M5-04 flow decomposition captured in `docs/M5_04_OPERATOR_FLOW_BLUEPRINT.md` as small execution blocks with acceptance criteria.
 - M5-05 checklist published in `docs/UI_SMOKE_CHECKLIST.md` for repeatable 15-minute local validation.
+- UI status bar now uses operator-focused service conditions (`Connected`, `Limited`, `Failed`, `Offline`) with deterministic precedence and recoverable action buttons.
+- Connections flow now uses Configuration terminology, protects unsaved edits during reload, and prevents overlapping apply/reload operations.
+- **In-app Help Center** implemented as a standalone movable window (`HelpWindow.cs`) with searchable TreeView navigation, category grouping, markdown rendering via CommunityToolkit `MarkdownTextBlock`, and working link handling (external URLs open in browser, relative doc links navigate within the window).
+- Help content in `docs/HELP.md` is a first-pass placeholder — **must be rewritten with accurate operator content before V1** (tracked as M9-03).
 
 ## Milestone M6: Runtime Bootstrap and Security Hardening Pass
 
@@ -113,10 +117,10 @@ Purpose: turn the startup and certificate baseline into a reliable implementatio
 
 | ID | Priority | Task | Estimate (h) | Depends On | Status | Done Criteria |
 |---|---|---|---:|---|---|---|
-| M6-01 | P0 | Harden startup configuration validation paths | 10-18 | M2-01, M5-03 | Todo | Missing, partial, and invalid config states produce deterministic health results and actionable logs |
-| M6-02 | P2 | Harden certificate bootstrap and trust-list workflows | 14-24 | M2-02, M2-03 | Todo | Certificate initialization, trust failures, and recovery paths are explicit, logged, and testable |
-| M6-03 | P0 | Separate healthy, degraded, and faulted startup semantics end-to-end | 10-18 | M2-04, M6-01 | Todo | Service and UI consistently distinguish startup success, degraded operation, and terminal startup failure |
-| M6-04 | P1 | Add regression coverage for bootstrap and security failure paths | 12-22 | M6-01, M6-02 | Todo | Tests cover invalid config, trust failure, and startup health-state transitions |
+| M6-01 | P0 | Harden startup configuration validation paths | 10-18 | M2-01, M5-03 | Done | Missing, partial, and invalid config states produce deterministic health results and actionable logs |
+| M6-02 | P2 | Harden certificate bootstrap and trust-list workflows | 14-24 | M2-02, M2-03 | Done | Certificate initialization, trust failures, and recovery paths are explicit, logged, and testable |
+| M6-03 | P0 | Separate healthy, degraded, and faulted startup semantics end-to-end | 10-18 | M2-04, M6-01 | Done | Service and UI consistently distinguish startup success, degraded operation, and terminal startup failure |
+| M6-04 | P1 | Add regression coverage for bootstrap and security failure paths | 12-22 | M6-01, M6-02 | Done | Tests cover invalid config, trust failure, and startup health-state transitions |
 
 ## Milestone M7: Connection Lifecycle and Health Hardening Pass
 
@@ -154,7 +158,7 @@ Purpose: close the gap between a developer scaffold and a repeatable V1 engineer
 |---|---|---|---:|---|---|---|
 | M9-01 | P1 | Finalize reproducible local validation workflow | 8-14 | M5-05, M6-04, M7-04, M8-04 | Todo | Local validation checklist covers build, test, service run, UI run, and incident capture expectations |
 | M9-02 | P1 | Add intentional publish/distribution workflow for service and UI | 10-16 | M8-01 | Todo | Publish steps are documented and produce known-good outputs for local deployment/testing |
-| M9-03 | P1 | Review docs against actual runtime and operator flows | 8-14 | M9-01, M9-02 | Todo | Docs match the implemented runtime, UI behavior, and troubleshooting workflow |
+| M9-03 | P1 | Review docs against actual runtime and operator flows | 8-14 | M9-01, M9-02 | Todo | Docs match the implemented runtime, UI behavior, and troubleshooting workflow. **Includes full rewrite of `docs/HELP.md` with accurate operator content for V1.** |
 | M9-04 | P0 | Confirm V1 blockers with final hardening checklist | 10-18 | M6-04, M7-04, M8-04, M9-03 | Todo | Each must-have item in `V1_SCOPE.md` has explicit evidence of completion or a tracked blocker |
 
 ## Current focus recommendation
@@ -162,6 +166,20 @@ Purpose: close the gap between a developer scaffold and a repeatable V1 engineer
 Baseline scaffold work is complete; use the second-pass milestones above as the active plan.
 
 Recommended first in-progress task:
-- Finish M5-04 by validating and polishing operator flows (apply/reload, startup status handling, diagnostics outcomes) across normal and degraded cases.
-- Complete M5-05 with a repeatable local UI smoke-test checklist.
-- Then move directly to M6-01 and M6-03 for startup validation hardening and explicit healthy/degraded/faulted semantics.
+- Start M7-01 by formalizing the connection state machine and transition rules.
+- Follow immediately with M7-02 reconnect/backoff hardening to lock deterministic recovery behavior.
+
+Current status note (2026-06-04):
+- M6 is complete and validated with green build/tests.
+- M7 is intentionally deferred for now due session AI budget constraints.
+- Next session should resume at M7-01 unless priorities change.
+
+Progress notes for M6:
+- Local server startup now reads persisted server settings from `config/server-settings.json` and validates host, port, and endpoint path before binding the OPC UA listener.
+- WinUI now exposes a `Server Settings` tab for local listener settings with endpoint preview, restart-required messaging, and reload/apply handling consistent with other configuration editors.
+- Port-conflict startup failures now report the configured listener address so operator recovery is explicit.
+- Startup fault reasons now map invalid configuration modes to deterministic operator messages (invalid server settings JSON, invalid server settings values, invalid upstream endpoint config, invalid namespace mapping config).
+- Added focused store/validation failure-path tests for server settings creation, malformed JSON, null payloads, and invalid persisted port values.
+- Startup now reports `Degraded` when security bootstrap finishes with trust warnings (for example no trusted peers), and preserves deterministic `Faulted` behavior for terminal bootstrap failures.
+- UI service status evaluation now honors security snapshot severity, surfacing security `Degraded` as `Limited` and security `Faulted` as `Failed`.
+- Regression coverage now includes deterministic startup failure reason mapping tests for invalid config and certificate bootstrap failure, plus startup health-state transition tests.

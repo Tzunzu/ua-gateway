@@ -13,6 +13,13 @@ public sealed partial class LiveOutputViewer : UserControl
     private readonly Queue<string> _lineBuffer = new();
     private bool _isPaused;
     private bool _eventStreamConnected;
+    private bool _eventStreamConnectionKnown;
+
+    public event Action? StreamConnectionStateChanged;
+
+    public bool IsEventStreamConnected => _eventStreamConnected;
+
+    public bool IsEventStreamConnectionKnown => _eventStreamConnectionKnown;
 
     public LiveOutputViewer()
     {
@@ -69,8 +76,10 @@ public sealed partial class LiveOutputViewer : UserControl
     {
         DispatcherQueue.TryEnqueue(() =>
         {
+            _eventStreamConnectionKnown = true;
             _eventStreamConnected = connected;
             LiveStatusText.Text = status;
+            StreamConnectionStateChanged?.Invoke();
         });
     }
 

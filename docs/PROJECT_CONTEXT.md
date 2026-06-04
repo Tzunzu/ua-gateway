@@ -4,6 +4,12 @@
 
 This project is under active development and is not yet production-ready.
 
+Current engineering checkpoint (2026-06-04):
+- Milestone M6 (runtime bootstrap and security hardening) is complete.
+- Build and test baseline is green after M6 changes.
+- Milestone M7 is intentionally deferred for now due AI budget constraints.
+- Planned resume point: M7-01 connection lifecycle state-machine formalization.
+
 ## Product Summary
 
 UA Gateway is an open-source Windows OPC UA gateway for PLC and SCADA environments.

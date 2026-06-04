@@ -56,7 +56,7 @@
                                FontWeight="SemiBold" />
                     <TextBlock x:Name="SelectedConnectionHintText"
                                Opacity="0.75"
-                               Text="Select a connection to edit its settings." />
+                               Text="Select a connection to edit its configuration." />
 
                     <TextBlock Text="Connection ID"
                                FontWeight="SemiBold" />
@@ -82,9 +82,11 @@
 
                     <StackPanel Orientation="Horizontal"
                                 Spacing="8">
-                        <Button Content="Reload Draft"
+                        <Button x:Name="ReloadConfigurationButton"
+                            Content="Reload Configuration"
                                 Click="ReloadConnectionsDraft_Click" />
-                        <Button Content="Apply Draft"
+                        <Button x:Name="ApplyConfigurationButton"
+                            Content="Apply Configuration"
                                 Click="ApplyConnectionsDraft_Click" />
                     </StackPanel>
                 </StackPanel>

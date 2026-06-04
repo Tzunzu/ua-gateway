@@ -43,6 +43,7 @@
                     <MenuBarItem Title="View">
                         <MenuFlyoutItem Text="Dashboard" IsEnabled="False" />
                         <MenuFlyoutItem Text="Connections" IsEnabled="False" />
+                        <MenuFlyoutItem Text="Server Settings" IsEnabled="False" />
                         <MenuFlyoutItem Text="Logs" IsEnabled="False" />
                         <MenuFlyoutItem Text="Live Output" IsEnabled="False" />
                         <MenuFlyoutSeparator />
@@ -71,7 +72,8 @@
                     </MenuBarItem>
 
                     <MenuBarItem Title="Help">
-                        <MenuFlyoutItem Text="Documentation" IsEnabled="False" />
+                        <MenuFlyoutItem Text="Documentation"
+                                        Click="DocumentationHelp_Click" />
                         <MenuFlyoutItem Text="About UA Gateway" IsEnabled="False" />
                     </MenuBarItem>
                 </MenuBar>
@@ -90,21 +92,31 @@
                     <SolidColorBrush x:Key="TabViewItemHeaderBackgroundPointerOver"
                                      Color="{ThemeResource ShellTabHeaderBackgroundPointerOverColor}" />
                 </TabView.Resources>
-                <TabViewItem Header="Dashboard">
+                <TabViewItem x:Name="DashboardTab"
+                             Header="Dashboard">
                     <controls:DashboardOverview x:Name="DashboardOverviewView" />
                 </TabViewItem>
 
-                <TabViewItem Header="Connections">
+                <TabViewItem x:Name="ConnectionsTab"
+                             Header="Connections">
                     <controls:ConnectionsEditor x:Name="ConnectionsEditorView" />
                 </TabViewItem>
 
-                <TabViewItem Header="Logs">
+                <TabViewItem x:Name="ServerSettingsTab"
+                             Header="Server Settings">
+                    <controls:ServerSettingsEditor x:Name="ServerSettingsEditorView" />
+                </TabViewItem>
+
+                <TabViewItem x:Name="LogsTab"
+                             Header="Logs">
                     <controls:LogsViewer x:Name="LogsViewerView" />
                 </TabViewItem>
 
-                <TabViewItem Header="Live Output">
+                <TabViewItem x:Name="LiveOutputTab"
+                             Header="Live Output">
                     <controls:LiveOutputViewer x:Name="LiveOutputViewerView" />
                 </TabViewItem>
+
             </TabView>
 
             <Border Grid.Row="2"
@@ -115,6 +127,7 @@
                     CornerRadius="8">
                 <Grid ColumnSpacing="18">
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
@@ -139,8 +152,20 @@
                     <TextBlock x:Name="StatusFailuresText"
                                Grid.Column="4"
                                Text="Failures: 0" />
+                        <StackPanel x:Name="StatusActionsPanel"
+                            Grid.Column="5"
+                            Orientation="Horizontal"
+                            Spacing="8"
+                            Visibility="Collapsed">
+                        <Button x:Name="StatusPrimaryActionButton"
+                            Click="StatusPrimaryActionButton_Click"
+                            Visibility="Collapsed" />
+                        <Button x:Name="StatusSecondaryActionButton"
+                            Click="StatusSecondaryActionButton_Click"
+                            Visibility="Collapsed" />
+                        </StackPanel>
                     <TextBlock x:Name="StatusUpdatedText"
-                               Grid.Column="5"
+                               Grid.Column="6"
                                HorizontalAlignment="Right"
                                Opacity="0.8"
                                Text="Updated: n/a" />

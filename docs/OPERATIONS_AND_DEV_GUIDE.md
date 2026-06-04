@@ -4,6 +4,8 @@
 
 This guide covers baseline local development and operator workflows for UA Gateway.
 
+For day-to-day operator usage and UI workflows, start with `docs/HELP.md`.
+
 ## Prerequisites
 
 - Windows 10/11

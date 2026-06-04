@@ -2,6 +2,14 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+			"label": "Stop Existing UAGateway Service",
+			"type": "shell",
+			"command": "$procs = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'UAGateway\\.Service\\.(dll|exe)' }; if ($procs) { $procs | ForEach-Object { Stop-Process -Id $_.ProcessId -Force } }",
+			"args": [],
+			"problemMatcher": [],
+			"group": "none"
+		},
+		{
 			"label": "Restore UAGateway",
 			"type": "shell",
 			"command": "dotnet",
@@ -26,6 +34,16 @@
 				"$msCompile"
 			],
 			"group": "build"
+		},
+		{
+			"label": "Prepare UAGateway Service Debug",
+			"dependsOn": [
+				"Stop Existing UAGateway Service",
+				"Build UAGateway"
+			],
+			"dependsOrder": "sequence",
+			"problemMatcher": [],
+			"group": "none"
 		},
 		{
 			"label": "Test UAGateway",
@@ -55,6 +73,10 @@
 		},
 		{
 			"label": "Run UAGateway Service",
+			"dependsOn": [
+				"Stop Existing UAGateway Service"
+			],
+			"dependsOrder": "sequence",
 			"type": "shell",
 			"command": "dotnet",
 			"args": [

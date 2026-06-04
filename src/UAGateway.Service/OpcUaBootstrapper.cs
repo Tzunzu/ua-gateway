@@ -41,7 +41,8 @@ internal sealed class OpcUaBootstrapper
                 GatewayLogMessages.ConfigApplyStarted(_logger, configApplyCorrelationId);
                 GatewayLogMessages.OpcUaConfigurationBuildStarted(_logger, configApplyCorrelationId);
 
-                var applicationConfiguration = BuildApplicationConfiguration();
+                var localServerConfiguration = LoadValidatedLocalServerConfiguration();
+                var applicationConfiguration = BuildApplicationConfiguration(localServerConfiguration);
                 var upstreamEndpointConfiguration = LoadValidatedUpstreamEndpointConfiguration();
                 var mappingConfiguration = LoadValidatedMappingConfiguration(upstreamEndpointConfiguration);
                 var enabledEndpointCount = upstreamEndpointConfiguration.Endpoints.Count(endpoint => endpoint.Enabled);
@@ -53,25 +54,31 @@ internal sealed class OpcUaBootstrapper
                     _logger,
                     applicationConfiguration.ApplicationUri ?? "unknown");
 
-                InitializeCertificateStores(applicationConfiguration);
+                var securitySnapshot = InitializeCertificateStores(applicationConfiguration);
                 StartLocalServerEndpoint(applicationConfiguration, mappingConfiguration, configApplyCorrelationId);
 
                 // This confirms the OPC UA stack package is available and wired into the service.
                 var statusCode = StatusCodes.Good;
                 GatewayLogMessages.OpcUaBootstrapInitialized(_logger, statusCode);
 
-                PublishStartupHealth(
-                    StartupHealthStatus.Healthy,
-                    "Configuration and security bootstrap completed.",
-                    configApplyCorrelationId);
+                var startupStatus = StartupHealthStatus.Healthy;
+                var startupReason = "Configuration and security bootstrap completed.";
+
+                if (securitySnapshot.Status == SecurityBootstrapStatus.Degraded)
+                {
+                    startupStatus = StartupHealthStatus.Degraded;
+                    startupReason = "Startup completed with security trust warnings.";
+                }
 
                 if (enabledEndpointCount == 0)
                 {
-                    PublishStartupHealth(
-                        StartupHealthStatus.Degraded,
-                        "Startup completed without configured upstream endpoints.",
-                        configApplyCorrelationId);
+                    startupStatus = StartupHealthStatus.Degraded;
+                    startupReason = securitySnapshot.Status == SecurityBootstrapStatus.Degraded
+                        ? "Startup completed with security trust warnings and without configured upstream endpoints."
+                        : "Startup completed without configured upstream endpoints.";
                 }
+
+                PublishStartupHealth(startupStatus, startupReason, configApplyCorrelationId);
 
                 GatewayLogMessages.ConfigApplyCompleted(_logger, configApplyCorrelationId);
             }
@@ -104,14 +111,15 @@ internal sealed class OpcUaBootstrapper
         catch (Exception ex)
         {
             var faultCorrelationId = CreateCorrelationId();
+            var startupFailureReason = BuildStartupFailureReason(ex);
             PublishStartupHealth(
                 StartupHealthStatus.Faulted,
-                $"Startup failed: {ex.Message}",
+                startupFailureReason,
                 faultCorrelationId);
 
             PublishSecurityDiagnosticsSnapshot(new SecurityBootstrapDiagnosticsSnapshot(
                 SecurityBootstrapStatus.Faulted,
-                $"Startup failed: {ex.Message}",
+                startupFailureReason,
                 DateTimeOffset.UtcNow,
                 faultCorrelationId,
                 null,
@@ -126,16 +134,79 @@ internal sealed class OpcUaBootstrapper
         }
     }
 
+    internal static string BuildStartupFailureReason(Exception ex)
+    {
+        var message = ex.Message;
+
+        // Local server settings
+        if (message.Contains("Local server configuration failed validation", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Startup failed: Local server settings are invalid. Fix config/server-settings.json and restart.";
+        }
+
+        if (message.Contains("Local server configuration file contains invalid JSON", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Startup failed: Local server settings JSON is malformed. Fix config/server-settings.json and restart.";
+        }
+
+        if (message.Contains("Local server configuration file is empty or invalid", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Startup failed: Local server settings file is empty or unreadable. Fix config/server-settings.json and restart.";
+        }
+
+        // Upstream endpoint configuration
+        if (message.Contains("Upstream endpoint configuration failed validation", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Startup failed: Upstream endpoint configuration is invalid. Fix config/upstream-endpoints.json and restart.";
+        }
+
+        if (message.Contains("Upstream endpoint configuration file contains invalid JSON", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Startup failed: Upstream endpoint configuration JSON is malformed. Fix config/upstream-endpoints.json and restart.";
+        }
+
+        if (message.Contains("Upstream endpoint configuration file is empty or invalid", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Startup failed: Upstream endpoint configuration file is empty or unreadable. Fix config/upstream-endpoints.json and restart.";
+        }
+
+        // Namespace mapping configuration
+        if (message.Contains("Namespace mapping configuration failed validation", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Startup failed: Namespace mapping configuration is invalid. Fix config/namespace-mapping.json and restart.";
+        }
+
+        if (message.Contains("Namespace mapping configuration file contains invalid JSON", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Startup failed: Namespace mapping configuration JSON is malformed. Fix config/namespace-mapping.json and restart.";
+        }
+
+        if (message.Contains("Namespace mapping configuration file is empty or invalid", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Startup failed: Namespace mapping configuration file is empty or unreadable. Fix config/namespace-mapping.json and restart.";
+        }
+
+        // Certificate bootstrap and trust workflow
+        if (message.Contains("OPC UA certificate bootstrap failed at startup", StringComparison.OrdinalIgnoreCase) ||
+            message.Contains("Application certificate is missing or invalid", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Startup failed: Certificate bootstrap failed. Verify application certificate and trust stores under %ProgramData%\\UA Gateway\\pki, then restart.";
+        }
+
+        return $"Startup failed: {message}";
+    }
+
     private static string CreateCorrelationId()
     {
         return Guid.NewGuid().ToString("N");
     }
 
-    private static ApplicationConfiguration BuildApplicationConfiguration()
+    private static ApplicationConfiguration BuildApplicationConfiguration(LocalServerConfigurationDocument localServerConfiguration)
     {
         var hostName = Utils.GetHostName();
         var appDataRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "UA Gateway");
         var pkiRoot = Path.Combine(appDataRoot, "pki");
+        var localServerBaseAddress = localServerConfiguration.BuildBaseAddress();
 
         var ownStorePath = Path.Combine(pkiRoot, "own");
         var trustedStorePath = Path.Combine(pkiRoot, "trusted");
@@ -200,7 +271,7 @@ internal sealed class OpcUaBootstrapper
             {
                 BaseAddresses = new StringCollection
                 {
-                    "opc.tcp://localhost:4840/UAGateway",
+                    localServerBaseAddress,
                 },
                 SecurityPolicies = new ServerSecurityPolicyCollection
                 {
@@ -236,7 +307,7 @@ internal sealed class OpcUaBootstrapper
         }
     }
 
-    private void InitializeCertificateStores(ApplicationConfiguration applicationConfiguration)
+    private SecurityBootstrapDiagnosticsSnapshot InitializeCertificateStores(ApplicationConfiguration applicationConfiguration)
     {
         var securityCorrelationId = CreateCorrelationId();
 
@@ -301,7 +372,7 @@ internal sealed class OpcUaBootstrapper
                     ? "Security bootstrap succeeded, but trust list has no trusted peers yet."
                     : "Security bootstrap succeeded with trusted peers configured.";
 
-                PublishSecurityDiagnosticsSnapshot(new SecurityBootstrapDiagnosticsSnapshot(
+                var snapshot = new SecurityBootstrapDiagnosticsSnapshot(
                     status,
                     reason,
                     DateTimeOffset.UtcNow,
@@ -312,13 +383,16 @@ internal sealed class OpcUaBootstrapper
                     rejectedCount,
                     applicationConfiguration.SecurityConfiguration.AutoAcceptUntrustedCertificates,
                     applicationConfiguration.SecurityConfiguration.RejectSHA1SignedCertificates,
-                    applicationConfiguration.SecurityConfiguration.MinimumCertificateKeySize));
+                    applicationConfiguration.SecurityConfiguration.MinimumCertificateKeySize);
+
+                PublishSecurityDiagnosticsSnapshot(snapshot);
+                return snapshot;
             }
             catch (Exception ex)
             {
                 GatewayLogMessages.SecurityBootstrapFailed(_logger, ex.Message, ex);
 
-                PublishSecurityDiagnosticsSnapshot(new SecurityBootstrapDiagnosticsSnapshot(
+                var snapshot = new SecurityBootstrapDiagnosticsSnapshot(
                     SecurityBootstrapStatus.Faulted,
                     $"Certificate bootstrap failed: {ex.Message}",
                     DateTimeOffset.UtcNow,
@@ -329,7 +403,9 @@ internal sealed class OpcUaBootstrapper
                     0,
                     false,
                     true,
-                    2048));
+                    2048);
+
+                PublishSecurityDiagnosticsSnapshot(snapshot);
 
                 throw new InvalidOperationException(
                     "OPC UA certificate bootstrap failed at startup. Check logs for event ID 3003 and error details.",
@@ -429,6 +505,28 @@ internal sealed class OpcUaBootstrapper
             "Upstream endpoint configuration failed validation. Fix config/upstream-endpoints.json and restart.");
     }
 
+    private LocalServerConfigurationDocument LoadValidatedLocalServerConfiguration()
+    {
+        var document = LocalServerConfigurationStore.LoadOrCreateDefault();
+        var issues = LocalServerConfigurationValidator.Validate(document);
+
+        if (issues.Count == 0)
+        {
+            return document;
+        }
+
+        foreach (var issue in issues)
+        {
+            _logger.LogError(
+                "Local server configuration validation failed. Setting: {Setting}, Issue: {Issue}",
+                issue.Setting,
+                issue.Message);
+        }
+
+        throw new InvalidOperationException(
+            "Local server configuration failed validation. Fix config/server-settings.json and restart.");
+    }
+
     private NamespaceMappingConfigurationDocument LoadValidatedMappingConfiguration(
         UpstreamEndpointConfigurationDocument upstreamEndpointConfiguration)
     {
@@ -495,10 +593,33 @@ internal sealed class OpcUaBootstrapper
         catch (Exception ex)
         {
             GatewayLogMessages.LocalServerStartFailed(_logger, ex.Message, ex);
+            var baseAddress = applicationConfiguration.ServerConfiguration.BaseAddresses.FirstOrDefault() ?? "unknown";
+            var startupMessage = IsListenerPortConflict(ex)
+                ? $"Local OPC UA server endpoint failed to start because the configured listener address {baseAddress} is already in use. Stop the existing service instance or change the configured host/port, then retry. Check logs for event IDs 5000-5002."
+                : $"Local OPC UA server endpoint failed to start for configured address {baseAddress}. Check logs for event IDs 5000-5002.";
+
             throw new InvalidOperationException(
-                "Local OPC UA server endpoint failed to start. Check logs for event IDs 5000-5002.",
+                startupMessage,
                 ex);
         }
+    }
+
+    private static bool IsListenerPortConflict(Exception exception)
+    {
+        for (var current = exception; current is not null; current = current.InnerException)
+        {
+            var message = current.Message;
+
+            if (message.Contains("Failed to establish tcp listener sockets", StringComparison.OrdinalIgnoreCase) ||
+                message.Contains("address already in use", StringComparison.OrdinalIgnoreCase) ||
+                message.Contains("Only one usage of each socket address", StringComparison.OrdinalIgnoreCase) ||
+                message.Contains("The requested address is not valid in its context", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void StopLocalServerEndpoint()

@@ -5,7 +5,7 @@
       "name": "Launch UAGateway Service",
       "type": "coreclr",
       "request": "launch",
-      "preLaunchTask": "Build UAGateway",
+      "preLaunchTask": "Prepare UAGateway Service Debug",
       "program": "${workspaceFolder}/src/UAGateway.Service/bin/Debug/net8.0/UAGateway.Service.dll",
       "args": [],
       "cwd": "${workspaceFolder}",
@@ -31,7 +31,7 @@
         "Launch UAGateway Service",
         "Launch UAGateway UI"
       ],
-      "preLaunchTask": "Build UAGateway",
+      "preLaunchTask": "Prepare UAGateway Service Debug",
       "stopAll": true
     }
   ]

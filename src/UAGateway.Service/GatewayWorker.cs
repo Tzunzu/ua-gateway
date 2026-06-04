@@ -34,7 +34,17 @@ internal sealed class GatewayWorker : BackgroundService
             serviceEventId: UAGatewayEventIds.ServiceLifecycle.WorkerStarting,
             message: "UA Gateway service worker starting.");
 
-        _bootstrapper.Initialize();
+        try
+        {
+            _bootstrapper.Initialize();
+        }
+        catch (Exception ex)
+        {
+            // Initialize() already published a Faulted health snapshot before throwing.
+            // We catch here so the background service task stays alive and the IPC
+            // control server can continue serving the Faulted health state to the UI.
+            _logger.LogCritical(ex, "UA Gateway startup faulted. Service is running in a degraded state. Check startup health via the UI or logs.");
+        }
 
         GatewayLogMessages.WorkerStarted(_logger);
         _eventStreamBroker.Publish(

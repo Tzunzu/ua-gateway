@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using System.Text.Json;
 using UAGateway.Core.Configuration;
 
 namespace UAGateway.UI.Controls;
@@ -7,18 +8,66 @@ namespace UAGateway.UI.Controls;
 public sealed partial class ConnectionsEditor : UserControl
 {
     private UpstreamEndpointConfigurationDocument _draftEndpoints = new();
+    private string _lastLoadedConfigurationHash = string.Empty;
     private string? _selectedEndpointId;
     private bool _isUpdatingConnectionDetails;
+    private bool _operationInProgress;
 
     public ConnectionsEditor()
     {
         InitializeComponent();
     }
 
+    public void ReloadConfiguration(bool forceReplaceUnsaved = false)
+    {
+        if (_operationInProgress)
+        {
+            return;
+        }
+
+        if (!forceReplaceUnsaved && HasUnsavedChanges())
+        {
+            _ = PromptAndReloadAsync();
+            return;
+        }
+
+        ReloadConfigurationCore();
+    }
+
     public void ReloadDraft()
     {
+        ReloadConfiguration();
+    }
+
+    private async Task PromptAndReloadAsync()
+    {
+        var prompt = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Title = "Unsaved configuration changes",
+            Content = "Reload will replace current unsaved edits with configuration from service.",
+            PrimaryButtonText = "Reload and Replace",
+            CloseButtonText = "Keep Editing",
+            DefaultButton = ContentDialogButton.Close,
+        };
+
+        var result = await prompt.ShowAsync();
+        if (result == ContentDialogResult.Primary)
+        {
+            ReloadConfigurationCore();
+            ConnectionsApplyStatusText.Text = "Configuration reloaded. Unsaved local edits were replaced.";
+        }
+        else
+        {
+            ConnectionsApplyStatusText.Text = "Reload canceled. Local edits were preserved.";
+        }
+    }
+
+    private void ReloadConfigurationCore()
+    {
         _draftEndpoints = UpstreamEndpointConfigurationStore.LoadOrCreateDefault();
-        ConnectionsApplyStatusText.Text = "Draft reloaded from disk.";
+        _lastLoadedConfigurationHash = ComputeConfigurationHash(_draftEndpoints);
+        ConnectionsApplyStatusText.Text = "Configuration reloaded from disk.";
 
         if (_draftEndpoints.Endpoints.All(endpoint => endpoint.Id != _selectedEndpointId))
         {
@@ -35,7 +84,7 @@ public sealed partial class ConnectionsEditor : UserControl
 
     private void RenderConnectionsDraft()
     {
-        ConnectionsHeaderText.Text = $"Draft endpoints: {_draftEndpoints.Endpoints.Count}";
+        ConnectionsHeaderText.Text = $"Configured endpoints: {_draftEndpoints.Endpoints.Count}";
 
         ConnectionsList.Items.Clear();
 
@@ -88,28 +137,38 @@ public sealed partial class ConnectionsEditor : UserControl
         _draftEndpoints.Endpoints.Add(newEndpoint);
         _selectedEndpointId = newEndpoint.Id;
         RenderConnectionsDraft();
-        ConnectionsApplyStatusText.Text = "Endpoint added to draft. Apply Draft to persist.";
+        ConnectionsApplyStatusText.Text = "Endpoint added to configuration. Apply Configuration to persist.";
     }
 
     private void ReloadConnectionsDraft_Click(object sender, RoutedEventArgs e)
     {
-        ReloadDraft();
+        ReloadConfiguration();
     }
 
     private void ApplyConnectionsDraft_Click(object sender, RoutedEventArgs e)
     {
+        if (_operationInProgress)
+        {
+            return;
+        }
+
+        SetOperationInProgress(true);
+
         var issues = UpstreamEndpointConfigurationValidator.Validate(_draftEndpoints);
         if (issues.Count > 0)
         {
             var firstIssue = issues[0];
             ConnectionsApplyStatusText.Text =
                 $"Apply failed. Validation issues: {issues.Count}. First issue: [{firstIssue.EndpointId}] {firstIssue.Message}";
+            SetOperationInProgress(false);
             return;
         }
 
         UpstreamEndpointConfigurationStore.Save(_draftEndpoints);
-        ConnectionsApplyStatusText.Text = "Apply succeeded. Draft saved to upstream endpoint configuration file.";
+        _lastLoadedConfigurationHash = ComputeConfigurationHash(_draftEndpoints);
+        ConnectionsApplyStatusText.Text = "Apply succeeded. Configuration saved to upstream endpoint configuration file.";
         RenderConnectionsDraft();
+        SetOperationInProgress(false);
     }
 
     private void ConnectionsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -199,7 +258,7 @@ public sealed partial class ConnectionsEditor : UserControl
             var hasSelection = endpoint is not null;
 
             SelectedConnectionHintText.Text = hasSelection
-                ? "Edit the selected draft connection. Apply Draft to persist changes."
+                ? "Edit the selected connection configuration. Apply Configuration to persist changes."
                 : "Select a connection to edit its settings.";
             SelectedConnectionIdTextBox.Text = endpoint?.Id ?? string.Empty;
             SelectedConnectionIdTextBox.IsEnabled = hasSelection;
@@ -230,7 +289,25 @@ public sealed partial class ConnectionsEditor : UserControl
         }
 
         _draftEndpoints.Endpoints[index] = update(_draftEndpoints.Endpoints[index]);
-        ConnectionsApplyStatusText.Text = "Draft updated. Apply Draft to persist changes.";
+        ConnectionsApplyStatusText.Text = "Configuration updated. Apply Configuration to persist changes.";
         RenderConnectionsDraft();
+    }
+
+    private bool HasUnsavedChanges()
+    {
+        return !string.Equals(_lastLoadedConfigurationHash, ComputeConfigurationHash(_draftEndpoints), StringComparison.Ordinal);
+    }
+
+    private static string ComputeConfigurationHash(UpstreamEndpointConfigurationDocument document)
+    {
+        var json = JsonSerializer.Serialize(document);
+        return json;
+    }
+
+    private void SetOperationInProgress(bool value)
+    {
+        _operationInProgress = value;
+        ApplyConfigurationButton.IsEnabled = !value;
+        ReloadConfigurationButton.IsEnabled = !value;
     }
 }

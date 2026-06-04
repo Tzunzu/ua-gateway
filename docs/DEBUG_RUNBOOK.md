@@ -9,6 +9,7 @@ Use this runbook to create reproducible diagnostics for UA Gateway service issue
 - Build succeeds locally.
 - Service can run from VS Code task `Run UAGateway Service`.
 - Logging output is available in `src/UAGateway.Service/bin/<Configuration>/net8.0/logs/` when running locally.
+- VS Code debug launches now stop any existing `UAGateway.Service` process before starting a new service session.
 
 ## Capture Checklist
 
@@ -45,6 +46,11 @@ Collect these items for every issue:
 2. Correlate prior lifecycle events by correlation ID.
 3. Verify expected start and completion events exist for the same correlation ID.
 4. Confirm whether the issue is recoverable or terminal.
+
+## Port Conflict Handling
+
+- If the local server port is already in use, the service now fails with a message that explicitly says the listener port is occupied.
+- In local debug sessions, start the service through the VS Code launch configuration so the previous service process is cleared automatically before the new session starts.
 
 ## Verification After Fix
 

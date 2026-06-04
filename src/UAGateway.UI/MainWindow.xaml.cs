@@ -3,8 +3,11 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Windowing;
+using UAGateway.Core.Configuration;
+using UAGateway.Core.Diagnostics;
 using UAGateway.Core.Ipc;
 using UAGateway.UI.Services;
+using UAGateway.Core.Health;
 using Windows.UI;
 using Windows.Graphics;
 using WinRT.Interop;
@@ -14,6 +17,13 @@ namespace UAGateway.UI;
 public sealed partial class MainWindow : Window
 {
     private readonly IpcControlClient _ipcControlClient = new();
+    private IpcStartupHealthSnapshotPayload? _latestStartupHealth;
+    private IpcConnectionSnapshotPayload? _latestConnectionSnapshot;
+    private IpcSecurityBootstrapSnapshotPayload? _latestSecuritySnapshot;
+    private bool _ipcConnected;
+    private StatusAction _primaryStatusAction;
+    private StatusAction _secondaryStatusAction;
+    private HelpWindow? _helpWindow;
     private ElementTheme _selectedTheme = ElementTheme.Dark;
     private ShellPalette _selectedPalette = ShellPalette.WinUI;
 
@@ -22,6 +32,7 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
 
         RootLayout.ActualThemeChanged += RootLayout_ActualThemeChanged;
+        LiveOutputViewerView.StreamConnectionStateChanged += LiveOutputViewerView_StreamConnectionStateChanged;
         ApplyTheme(_selectedTheme);
         ApplyShellPalette();
 
@@ -32,19 +43,25 @@ public sealed partial class MainWindow : Window
 
     private void LoadInitialState()
     {
-        UpdateStatusBar(null, null, ipcConnected: false);
+        _latestStartupHealth = null;
+        _latestConnectionSnapshot = null;
+        _latestSecuritySnapshot = null;
+        _ipcConnected = false;
+        UpdateStatusBar();
 
         try
         {
             DashboardOverviewView.RefreshDiagnostics();
             DashboardOverviewView.ShowStartupHealth(null);
-            ConnectionsEditorView.ReloadDraft();
+            ConnectionsEditorView.ReloadConfiguration(forceReplaceUnsaved: true);
+            ServerSettingsEditorView.ReloadConfiguration(forceReplaceUnsaved: true);
             LogsViewerView.ReloadLogs();
             LiveOutputViewerView.StartMonitoring();
         }
         catch (Exception ex)
         {
             ConnectionsEditorView.ShowStatusMessage($"Startup warning: {ex.Message}");
+            ServerSettingsEditorView.ShowStatusMessage($"Startup warning: {ex.Message}");
         }
     }
 
@@ -78,59 +95,267 @@ public sealed partial class MainWindow : Window
         {
             DashboardOverviewView.ShowStartupHealth(null);
             ConnectionsEditorView.ShowStatusMessage("IPC control channel unavailable. Service may be offline.");
-            UpdateStatusBar(null, null, ipcConnected: false);
+            _ipcConnected = false;
+            UpdateStatusBar();
             return;
         }
 
-        var startupHealth = await _ipcControlClient.TryGetStartupHealthAsync();
-        DashboardOverviewView.ShowStartupHealth(startupHealth);
+        _latestStartupHealth = await _ipcControlClient.TryGetStartupHealthAsync();
+        DashboardOverviewView.ShowStartupHealth(_latestStartupHealth);
 
-        var connectionSnapshot = await _ipcControlClient.TryGetConnectionSnapshotAsync();
-        DashboardOverviewView.ShowConnectionSnapshot(connectionSnapshot);
+        _latestConnectionSnapshot = await _ipcControlClient.TryGetConnectionSnapshotAsync();
+        DashboardOverviewView.ShowConnectionSnapshot(_latestConnectionSnapshot);
 
-        var securitySnapshot = await _ipcControlClient.TryGetSecurityBootstrapAsync();
-        DashboardOverviewView.ShowSecuritySnapshot(securitySnapshot);
+        _latestSecuritySnapshot = await _ipcControlClient.TryGetSecurityBootstrapAsync();
+        DashboardOverviewView.ShowSecuritySnapshot(_latestSecuritySnapshot);
 
-        UpdateStatusBar(startupHealth, connectionSnapshot, ipcConnected: true);
+        _ipcConnected = true;
+
+        UpdateStatusBar();
 
         ConnectionsEditorView.ShowStatusMessage(
             $"IPC connected. Protocol {handshake.ProtocolVersion}, service {handshake.ServiceVersion}.");
     }
 
-    private void UpdateStatusBar(
-        IpcStartupHealthSnapshotPayload? startupHealth,
-        IpcConnectionSnapshotPayload? connectionSnapshot,
-        bool ipcConnected)
+    private async Task RefreshSnapshotsAsync()
     {
-        if (!ipcConnected)
+        if (!_ipcConnected)
         {
-            StatusServiceText.Text = "Service: Offline";
+            await CheckIpcHandshakeAsync();
+            return;
+        }
+
+        _latestStartupHealth = await _ipcControlClient.TryGetStartupHealthAsync();
+        _latestConnectionSnapshot = await _ipcControlClient.TryGetConnectionSnapshotAsync();
+        _latestSecuritySnapshot = await _ipcControlClient.TryGetSecurityBootstrapAsync();
+
+        DashboardOverviewView.ShowStartupHealth(_latestStartupHealth);
+        DashboardOverviewView.ShowConnectionSnapshot(_latestConnectionSnapshot);
+        DashboardOverviewView.ShowSecuritySnapshot(_latestSecuritySnapshot);
+
+        UpdateStatusBar();
+    }
+
+    private void LiveOutputViewerView_StreamConnectionStateChanged()
+    {
+        UpdateStatusBar();
+    }
+
+    private void UpdateStatusBar()
+    {
+        var status = EvaluateServiceStatus();
+
+        if (!_ipcConnected)
+        {
+            StatusServiceText.Text = status.Text;
             StatusIpcText.Text = "UI-Service: Disconnected";
             StatusClientsText.Text = "Clients connected: n/a";
             StatusServersText.Text = "Servers connected: 0/0";
             StatusFailuresText.Text = "Failures: 0";
             StatusUpdatedText.Text = "Updated: waiting for service";
+            SetStatusActions(status.PrimaryAction, status.SecondaryAction);
             return;
         }
 
-        var startupStatus = startupHealth?.Snapshot?.Status.ToString() ?? "Unknown";
-        StatusServiceText.Text = $"Service: {startupStatus}";
+        StatusServiceText.Text = status.Text;
         StatusIpcText.Text = "UI-Service: Connected";
 
         // Local client session count is not published yet by the service.
         StatusClientsText.Text = "Clients connected: n/a";
 
-        var connectedServers = connectionSnapshot?.Snapshot?.ConnectedEndpointCount ?? 0;
-        var enabledServers = connectionSnapshot?.Snapshot?.EnabledEndpointCount ?? 0;
-        var totalFailures = connectionSnapshot?.Snapshot?.TotalFailureCount ?? 0;
+        var connectedServers = _latestConnectionSnapshot?.Snapshot?.ConnectedEndpointCount ?? 0;
+        var enabledServers = _latestConnectionSnapshot?.Snapshot?.EnabledEndpointCount ?? 0;
+        var totalFailures = _latestConnectionSnapshot?.Snapshot?.TotalFailureCount ?? 0;
 
         StatusServersText.Text = $"Servers connected: {connectedServers}/{enabledServers}";
         StatusFailuresText.Text = $"Failures: {totalFailures}";
 
-        var updatedUtc = connectionSnapshot?.Snapshot?.UpdatedUtc ?? startupHealth?.Snapshot?.UpdatedUtc;
+        var updatedUtc = _latestConnectionSnapshot?.Snapshot?.UpdatedUtc ?? _latestStartupHealth?.Snapshot?.UpdatedUtc;
         StatusUpdatedText.Text = updatedUtc is null
             ? "Updated: n/a"
             : $"Updated: {updatedUtc.Value:HH:mm:ss} UTC";
+
+        SetStatusActions(status.PrimaryAction, status.SecondaryAction);
+    }
+
+    private ServiceStatusEvaluation EvaluateServiceStatus()
+    {
+        if (!_ipcConnected)
+        {
+            return new ServiceStatusEvaluation(
+                "Service Status: Offline (IPC control channel unavailable)",
+                StatusAction.RetryIpc,
+                StatusAction.OpenLogs);
+        }
+
+        if (_latestStartupHealth?.Snapshot?.Status == StartupHealthStatus.Faulted)
+        {
+            var reason = BuildStartupReasonSuffix(_latestStartupHealth.Snapshot.Reason, fallback: "Service startup failed");
+            return new ServiceStatusEvaluation(
+                $"Service Status: Failed ({reason})",
+                StatusAction.OpenLogs,
+                StatusAction.RetryIpc);
+        }
+
+        if (_latestStartupHealth?.Snapshot?.Status == StartupHealthStatus.Degraded)
+        {
+            var reason = BuildStartupReasonSuffix(_latestStartupHealth.Snapshot.Reason, fallback: "Startup validation warnings");
+            return new ServiceStatusEvaluation(
+                $"Service Status: Limited ({reason})",
+                StatusAction.OpenLogs,
+                StatusAction.Refresh);
+        }
+
+        if (_latestSecuritySnapshot is null || !_latestSecuritySnapshot.Available || _latestSecuritySnapshot.Snapshot is null)
+        {
+            return new ServiceStatusEvaluation(
+                "Service Status: Limited (No security snapshot)",
+                StatusAction.OpenLogs,
+                StatusAction.Refresh);
+        }
+
+        if (_latestSecuritySnapshot.Snapshot.Status == SecurityBootstrapStatus.Faulted)
+        {
+            return new ServiceStatusEvaluation(
+                "Service Status: Failed (Security bootstrap faulted)",
+                StatusAction.OpenLogs,
+                StatusAction.RetryIpc);
+        }
+
+        if (_latestSecuritySnapshot.Snapshot.Status == SecurityBootstrapStatus.Degraded)
+        {
+            return new ServiceStatusEvaluation(
+                "Service Status: Limited (Security trust configuration needs attention)",
+                StatusAction.OpenLogs,
+                StatusAction.Refresh);
+        }
+
+        if (_latestConnectionSnapshot?.Snapshot is null)
+        {
+            return new ServiceStatusEvaluation(
+                "Service Status: Limited (Snapshot refresh pending)",
+                StatusAction.Refresh,
+                StatusAction.OpenLogs);
+        }
+
+        var connected = _latestConnectionSnapshot.Snapshot.ConnectedEndpointCount;
+        var enabled = _latestConnectionSnapshot.Snapshot.EnabledEndpointCount;
+
+        if (connected < enabled)
+        {
+            return new ServiceStatusEvaluation(
+                $"Service Status: Limited (Partial upstream connectivity {connected}/{enabled} connected)",
+                StatusAction.OpenConnections,
+                StatusAction.Refresh);
+        }
+
+        if (LiveOutputViewerView.IsEventStreamConnectionKnown && !LiveOutputViewerView.IsEventStreamConnected)
+        {
+            return new ServiceStatusEvaluation(
+                "Service Status: Limited (Live event stream disconnected)",
+                StatusAction.RetryIpc,
+                StatusAction.Refresh);
+        }
+
+        return new ServiceStatusEvaluation(
+            "Service Status: Connected (All monitored services nominal)",
+            StatusAction.None,
+            StatusAction.None);
+    }
+
+    private static string BuildStartupReasonSuffix(string? startupReason, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(startupReason))
+        {
+            return fallback;
+        }
+
+        var normalized = startupReason.Trim();
+        if (normalized.StartsWith("Startup failed:", StringComparison.OrdinalIgnoreCase))
+        {
+            return normalized["Startup failed:".Length..].Trim();
+        }
+
+        return normalized;
+    }
+
+    private void SetStatusActions(StatusAction primary, StatusAction secondary)
+    {
+        _primaryStatusAction = primary;
+        _secondaryStatusAction = secondary;
+
+        ConfigureStatusActionButton(StatusPrimaryActionButton, primary);
+        ConfigureStatusActionButton(StatusSecondaryActionButton, secondary);
+
+        StatusActionsPanel.Visibility =
+            primary == StatusAction.None && secondary == StatusAction.None
+                ? Visibility.Collapsed
+                : Visibility.Visible;
+    }
+
+    private static void ConfigureStatusActionButton(Button button, StatusAction action)
+    {
+        if (action == StatusAction.None)
+        {
+            button.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        button.Visibility = Visibility.Visible;
+        button.Content = action switch
+        {
+            StatusAction.RetryIpc => "Retry IPC",
+            StatusAction.Refresh => "Refresh",
+            StatusAction.OpenLogs => "Open Logs",
+            StatusAction.OpenConnections => "Open Connections",
+            _ => "Action",
+        };
+    }
+
+    private async void StatusPrimaryActionButton_Click(object sender, RoutedEventArgs e)
+    {
+        await ExecuteStatusActionAsync(_primaryStatusAction);
+    }
+
+    private async void StatusSecondaryActionButton_Click(object sender, RoutedEventArgs e)
+    {
+        await ExecuteStatusActionAsync(_secondaryStatusAction);
+    }
+
+    private async Task ExecuteStatusActionAsync(StatusAction action)
+    {
+        if (action == StatusAction.None)
+        {
+            return;
+        }
+
+        StatusPrimaryActionButton.IsEnabled = false;
+        StatusSecondaryActionButton.IsEnabled = false;
+
+        try
+        {
+            switch (action)
+            {
+                case StatusAction.RetryIpc:
+                    await CheckIpcHandshakeAsync();
+                    break;
+                case StatusAction.Refresh:
+                    await RefreshSnapshotsAsync();
+                    break;
+                case StatusAction.OpenLogs:
+                    MainTabs.SelectedItem = LogsTab;
+                    break;
+                case StatusAction.OpenConnections:
+                    MainTabs.SelectedItem = ConnectionsTab;
+                    break;
+            }
+        }
+        finally
+        {
+            await Task.Delay(1000);
+            StatusPrimaryActionButton.IsEnabled = true;
+            StatusSecondaryActionButton.IsEnabled = true;
+        }
     }
 
     private void ThemeSystem_Click(object sender, RoutedEventArgs e)
@@ -158,6 +383,49 @@ public sealed partial class MainWindow : Window
     {
         _selectedPalette = ShellPalette.VSCode;
         ApplyShellPalette();
+    }
+
+    private async void DocumentationHelp_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (_helpWindow is null)
+            {
+                _helpWindow = new HelpWindow();
+                _helpWindow.Closed += HelpWindow_Closed;
+            }
+
+            _helpWindow.Activate();
+        }
+        catch (Exception ex)
+        {
+            await ShowHelpDialogAsync(
+                "Unable to open help",
+                $"Failed to open help center.\n\n{ex.Message}");
+        }
+    }
+
+    private void HelpWindow_Closed(object sender, WindowEventArgs args)
+    {
+        if (_helpWindow is not null)
+        {
+            _helpWindow.Closed -= HelpWindow_Closed;
+            _helpWindow = null;
+        }
+    }
+
+    private async Task ShowHelpDialogAsync(string title, string content)
+    {
+        var dialog = new ContentDialog
+        {
+            XamlRoot = RootLayout.XamlRoot,
+            Title = title,
+            Content = content,
+            PrimaryButtonText = "OK",
+            DefaultButton = ContentDialogButton.Primary,
+        };
+
+        await dialog.ShowAsync();
     }
 
     private void ApplyTheme(ElementTheme theme)
@@ -265,4 +533,18 @@ public sealed partial class MainWindow : Window
         Color TabHeaderBackgroundPointerOver,
         Color SurfaceBorder
     );
+
+    private readonly record struct ServiceStatusEvaluation(
+        string Text,
+        StatusAction PrimaryAction,
+        StatusAction SecondaryAction);
+
+    private enum StatusAction
+    {
+        None,
+        RetryIpc,
+        Refresh,
+        OpenLogs,
+        OpenConnections,
+    }
 }

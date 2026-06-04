@@ -243,4 +243,85 @@ public sealed class ConfigurationValidationTests
         Assert.DoesNotContain(issues, issue =>
             issue.Message.Contains("Projected name", StringComparison.OrdinalIgnoreCase));
     }
+
+    [Fact]
+    public void LocalServerConfigurationValidator_AcceptsValidPort()
+    {
+        var document = new LocalServerConfigurationDocument
+        {
+            Host = "localhost",
+            Port = 4840,
+            EndpointPath = "UAGateway",
+        };
+
+        var issues = LocalServerConfigurationValidator.Validate(document);
+
+        Assert.Empty(issues);
+    }
+
+    [Fact]
+    public void LocalServerConfigurationValidator_FlagsOutOfRangePort()
+    {
+        var document = new LocalServerConfigurationDocument
+        {
+            Host = "localhost",
+            Port = 70000,
+            EndpointPath = "UAGateway",
+        };
+
+        var issues = LocalServerConfigurationValidator.Validate(document);
+
+        Assert.Contains(issues, issue =>
+            issue.Setting == nameof(LocalServerConfigurationDocument.Port) &&
+            issue.Message.Contains("between 1 and 65535", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void LocalServerConfigurationValidator_FlagsInvalidHost()
+    {
+        var document = new LocalServerConfigurationDocument
+        {
+            Host = "opc.tcp://localhost",
+            Port = 4840,
+            EndpointPath = "UAGateway",
+        };
+
+        var issues = LocalServerConfigurationValidator.Validate(document);
+
+        Assert.Contains(issues, issue =>
+            issue.Setting == nameof(LocalServerConfigurationDocument.Host) &&
+            issue.Message.Contains("host or IP", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void LocalServerConfigurationValidator_FlagsMissingEndpointPath()
+    {
+        var document = new LocalServerConfigurationDocument
+        {
+            Host = "localhost",
+            Port = 4840,
+            EndpointPath = " / ",
+        };
+
+        var issues = LocalServerConfigurationValidator.Validate(document);
+
+        Assert.Contains(issues, issue =>
+            issue.Setting == nameof(LocalServerConfigurationDocument.EndpointPath) &&
+            issue.Message.Contains("required", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void LocalServerConfigurationDocument_BuildBaseAddress_UsesNormalizedPath()
+    {
+        var document = new LocalServerConfigurationDocument
+        {
+            Host = "127.0.0.1",
+            Port = 5123,
+            EndpointPath = "/Plant/Gateway/",
+        };
+
+        var baseAddress = document.BuildBaseAddress();
+
+        Assert.Equal("opc.tcp://127.0.0.1:5123/Plant/Gateway", baseAddress);
+    }
 }
