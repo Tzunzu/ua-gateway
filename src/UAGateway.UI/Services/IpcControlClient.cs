@@ -1,5 +1,6 @@
 using System.IO.Pipes;
 using System.Text.Json;
+using UAGateway.Core.Configuration;
 using UAGateway.Core.Ipc;
 
 namespace UAGateway.UI.Services;
@@ -89,6 +90,18 @@ internal sealed class IpcControlClient
         var response = await SendRequestAsync<object, IpcSecurityBootstrapSnapshotPayload>(
             IpcMethodNames.SecurityGetBootstrap,
             new { },
+            cancellationToken);
+
+        return response?.Payload;
+    }
+
+    public async Task<IpcApplyDraftConfigResponse?> TryApplyDraftConfigurationAsync(
+        UpstreamEndpointConfigurationDocument draftDocument,
+        CancellationToken cancellationToken = default)
+    {
+        var response = await SendRequestAsync<IpcApplyDraftConfigRequest, IpcApplyDraftConfigResponse>(
+            IpcMethodNames.ConnectionsApplyDraftConfig,
+            new IpcApplyDraftConfigRequest(draftDocument),
             cancellationToken);
 
         return response?.Payload;

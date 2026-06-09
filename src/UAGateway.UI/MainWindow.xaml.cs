@@ -3,11 +3,10 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Windowing;
-using UAGateway.Core.Configuration;
-using UAGateway.Core.Diagnostics;
-using UAGateway.Core.Ipc;
+using UAGateway.UI.Pages;
 using UAGateway.UI.Services;
-using UAGateway.Core.Health;
+using System.IO;
+using System.Linq;
 using Windows.UI;
 using Windows.Graphics;
 using WinRT.Interop;
@@ -16,52 +15,73 @@ namespace UAGateway.UI;
 
 public sealed partial class MainWindow : Window
 {
-    private readonly IpcControlClient _ipcControlClient = new();
-    private IpcStartupHealthSnapshotPayload? _latestStartupHealth;
-    private IpcConnectionSnapshotPayload? _latestConnectionSnapshot;
-    private IpcSecurityBootstrapSnapshotPayload? _latestSecuritySnapshot;
-    private bool _ipcConnected;
-    private StatusAction _primaryStatusAction;
-    private StatusAction _secondaryStatusAction;
+    private readonly ShellStateService _shellStateService = new();
+    private readonly ShellNavigationCoordinator _navigationCoordinator = new();
+    private readonly DashboardPage _dashboardPage;
+    private readonly ConnectionsPage _connectionsPage;
+    private readonly ServerSettingsPage _serverSettingsPage;
+    private readonly LogsPage _logsPage;
+    private readonly LiveOutputPage _liveOutputPage;
+    private readonly SettingsPage _settingsPage;
+    private readonly Stack<string> _routeBackStack = new();
     private HelpWindow? _helpWindow;
+    private bool _isClosing;
     private ElementTheme _selectedTheme = ElementTheme.Dark;
     private ShellPalette _selectedPalette = ShellPalette.WinUI;
+    private string _currentRoute = string.Empty;
 
     public MainWindow()
     {
+        _dashboardPage = _navigationCoordinator.GetPage<DashboardPage>(ShellRouteKeys.Dashboard);
+        _connectionsPage = _navigationCoordinator.GetPage<ConnectionsPage>(ShellRouteKeys.Connections);
+        _serverSettingsPage = _navigationCoordinator.GetPage<ServerSettingsPage>(ShellRouteKeys.ServerSettings);
+        _logsPage = _navigationCoordinator.GetPage<LogsPage>(ShellRouteKeys.Logs);
+        _liveOutputPage = _navigationCoordinator.GetPage<LiveOutputPage>(ShellRouteKeys.LiveOutput);
+        _settingsPage = _navigationCoordinator.GetPage<SettingsPage>(ShellRouteKeys.Settings);
+
         InitializeComponent();
 
+        ExtendsContentIntoTitleBar = true;
+        SetTitleBar(AppTitleBar);
+        ConfigureWindowTitleBar();
+        Closed += MainWindow_Closed;
+
         RootLayout.ActualThemeChanged += RootLayout_ActualThemeChanged;
-        LiveOutputViewerView.StreamConnectionStateChanged += LiveOutputViewerView_StreamConnectionStateChanged;
+        _liveOutputPage.View.StreamConnectionStateChanged += LiveOutputViewerView_StreamConnectionStateChanged;
+        _settingsPage.ThemeSelectionRequested += SettingsPage_ThemeSelectionRequested;
+        _settingsPage.PaletteSelectionRequested += SettingsPage_PaletteSelectionRequested;
+        _settingsPage.HelpRequested += SettingsPage_HelpRequested;
         ApplyTheme(_selectedTheme);
         ApplyShellPalette();
 
+        _settingsPage.SetSelectedTheme(MapThemeToSelection(_selectedTheme));
+        _settingsPage.SetSelectedPalette(MapPaletteToSelection(_selectedPalette));
+
         EnsureVisibleOnLaunch();
+        ApplyWindowIcon();
         LoadInitialState();
+        NavigateToRoute(ShellRouteKeys.Dashboard, updateSelection: true);
         _ = CheckIpcHandshakeAsync();
     }
 
     private void LoadInitialState()
     {
-        _latestStartupHealth = null;
-        _latestConnectionSnapshot = null;
-        _latestSecuritySnapshot = null;
-        _ipcConnected = false;
+        _shellStateService.Reset();
         UpdateStatusBar();
 
         try
         {
-            DashboardOverviewView.RefreshDiagnostics();
-            DashboardOverviewView.ShowStartupHealth(null);
-            ConnectionsEditorView.ReloadConfiguration(forceReplaceUnsaved: true);
-            ServerSettingsEditorView.ReloadConfiguration(forceReplaceUnsaved: true);
-            LogsViewerView.ReloadLogs();
-            LiveOutputViewerView.StartMonitoring();
+            _dashboardPage.View.RefreshDiagnostics();
+            _dashboardPage.View.ShowStartupHealth(null);
+            _connectionsPage.View.ReloadConfiguration(forceReplaceUnsaved: true);
+            _serverSettingsPage.View.ReloadConfiguration(forceReplaceUnsaved: true);
+            _logsPage.View.ReloadLogs();
+            _liveOutputPage.View.StartMonitoring();
         }
         catch (Exception ex)
         {
-            ConnectionsEditorView.ShowStatusMessage($"Startup warning: {ex.Message}");
-            ServerSettingsEditorView.ShowStatusMessage($"Startup warning: {ex.Message}");
+            _connectionsPage.View.ShowStatusMessage($"Startup warning: {ex.Message}");
+            _serverSettingsPage.View.ShowStatusMessage($"Startup warning: {ex.Message}");
         }
     }
 
@@ -82,280 +102,173 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void RefreshAll_Click(object sender, RoutedEventArgs e)
+    private void ApplyWindowIcon()
     {
-        LoadInitialState();
-        _ = CheckIpcHandshakeAsync();
+        try
+        {
+            var baseDirectory = AppContext.BaseDirectory;
+            var iconCandidates = new[]
+            {
+                Path.Combine(baseDirectory, "Assets", "Brand", "gateway-icon.ico"),
+                Path.Combine(baseDirectory, "gateway-icon.ico"),
+            };
+
+            var iconPath = iconCandidates.FirstOrDefault(File.Exists);
+            if (!string.IsNullOrWhiteSpace(iconPath))
+            {
+                AppWindow.SetIcon(iconPath);
+            }
+        }
+        catch
+        {
+            // Best-effort only. Keep launch stable if icon loading fails.
+        }
+    }
+
+    private void ConfigureWindowTitleBar()
+    {
+        var titleBar = AppWindow.TitleBar;
+        if (!AppWindowTitleBar.IsCustomizationSupported())
+        {
+            return;
+        }
+
+        titleBar.ButtonBackgroundColor = Colors.Transparent;
+        titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
+        titleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
+        AppWindow.Changed += AppWindow_Changed;
+
+        UpdateTitleBarInsets();
+    }
+
+    private void AppWindow_Changed(AppWindow sender, AppWindowChangedEventArgs args)
+    {
+        if (_isClosing)
+        {
+            return;
+        }
+
+        DispatcherQueue.TryEnqueue(UpdateTitleBarInsets);
+    }
+
+    private void UpdateTitleBarInsets()
+    {
+        var leftInsetColumn = AppTitleBarLeftInsetColumn;
+        var rightInsetColumn = AppTitleBarRightInsetColumn;
+
+        if (_isClosing || leftInsetColumn is null || rightInsetColumn is null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (!AppWindowTitleBar.IsCustomizationSupported())
+            {
+                leftInsetColumn.Width = new GridLength(0);
+                rightInsetColumn.Width = new GridLength(0);
+                return;
+            }
+
+            var titleBar = AppWindow?.TitleBar;
+            if (titleBar is null)
+            {
+                leftInsetColumn.Width = new GridLength(0);
+                rightInsetColumn.Width = new GridLength(0);
+                return;
+            }
+
+            leftInsetColumn.Width = new GridLength(titleBar.LeftInset);
+            rightInsetColumn.Width = new GridLength(titleBar.RightInset);
+        }
+        catch
+        {
+            // Keep the window stable if the title bar becomes unavailable during shutdown/transition.
+            if (leftInsetColumn is not null)
+            {
+                leftInsetColumn.Width = new GridLength(0);
+            }
+
+            if (rightInsetColumn is not null)
+            {
+                rightInsetColumn.Width = new GridLength(0);
+            }
+        }
+    }
+
+    private void MainWindow_Closed(object sender, WindowEventArgs args)
+    {
+        _isClosing = true;
+        AppWindow.Changed -= AppWindow_Changed;
     }
 
     private async Task CheckIpcHandshakeAsync()
     {
-        var handshake = await _ipcControlClient.TryHandshakeAsync();
+        var handshake = await _shellStateService.CheckIpcHandshakeAsync();
         if (handshake is null)
         {
-            DashboardOverviewView.ShowStartupHealth(null);
-            ConnectionsEditorView.ShowStatusMessage("IPC control channel unavailable. Service may be offline.");
-            _ipcConnected = false;
+            _dashboardPage.View.ShowStartupHealth(null);
             UpdateStatusBar();
             return;
         }
 
-        _latestStartupHealth = await _ipcControlClient.TryGetStartupHealthAsync();
-        DashboardOverviewView.ShowStartupHealth(_latestStartupHealth);
-
-        _latestConnectionSnapshot = await _ipcControlClient.TryGetConnectionSnapshotAsync();
-        DashboardOverviewView.ShowConnectionSnapshot(_latestConnectionSnapshot);
-
-        _latestSecuritySnapshot = await _ipcControlClient.TryGetSecurityBootstrapAsync();
-        DashboardOverviewView.ShowSecuritySnapshot(_latestSecuritySnapshot);
-
-        _ipcConnected = true;
+        _dashboardPage.View.ShowStartupHealth(_shellStateService.LatestStartupHealth);
+        _dashboardPage.View.ShowConnectionSnapshot(_shellStateService.LatestConnectionSnapshot);
+        _dashboardPage.View.ShowSecuritySnapshot(_shellStateService.LatestSecuritySnapshot);
 
         UpdateStatusBar();
-
-        ConnectionsEditorView.ShowStatusMessage(
-            $"IPC connected. Protocol {handshake.ProtocolVersion}, service {handshake.ServiceVersion}.");
     }
 
     private async Task RefreshSnapshotsAsync()
     {
-        if (!_ipcConnected)
-        {
-            await CheckIpcHandshakeAsync();
-            return;
-        }
+        await _shellStateService.RefreshSnapshotsAsync();
 
-        _latestStartupHealth = await _ipcControlClient.TryGetStartupHealthAsync();
-        _latestConnectionSnapshot = await _ipcControlClient.TryGetConnectionSnapshotAsync();
-        _latestSecuritySnapshot = await _ipcControlClient.TryGetSecurityBootstrapAsync();
-
-        DashboardOverviewView.ShowStartupHealth(_latestStartupHealth);
-        DashboardOverviewView.ShowConnectionSnapshot(_latestConnectionSnapshot);
-        DashboardOverviewView.ShowSecuritySnapshot(_latestSecuritySnapshot);
+        _dashboardPage.View.ShowStartupHealth(_shellStateService.LatestStartupHealth);
+        _dashboardPage.View.ShowConnectionSnapshot(_shellStateService.LatestConnectionSnapshot);
+        _dashboardPage.View.ShowSecuritySnapshot(_shellStateService.LatestSecuritySnapshot);
 
         UpdateStatusBar();
     }
 
     private void LiveOutputViewerView_StreamConnectionStateChanged()
     {
+        _shellStateService.SetEventStreamState(
+            _liveOutputPage.View.IsEventStreamConnectionKnown,
+            _liveOutputPage.View.IsEventStreamConnected);
         UpdateStatusBar();
     }
 
     private void UpdateStatusBar()
     {
-        var status = EvaluateServiceStatus();
+        var status = _shellStateService.EvaluateServiceStatus();
 
-        if (!_ipcConnected)
+        if (!_shellStateService.IpcConnected)
         {
             StatusServiceText.Text = status.Text;
-            StatusIpcText.Text = "UI-Service: Disconnected";
             StatusClientsText.Text = "Clients connected: n/a";
             StatusServersText.Text = "Servers connected: 0/0";
             StatusFailuresText.Text = "Failures: 0";
             StatusUpdatedText.Text = "Updated: waiting for service";
-            SetStatusActions(status.PrimaryAction, status.SecondaryAction);
             return;
         }
 
         StatusServiceText.Text = status.Text;
-        StatusIpcText.Text = "UI-Service: Connected";
 
         // Local client session count is not published yet by the service.
         StatusClientsText.Text = "Clients connected: n/a";
 
-        var connectedServers = _latestConnectionSnapshot?.Snapshot?.ConnectedEndpointCount ?? 0;
-        var enabledServers = _latestConnectionSnapshot?.Snapshot?.EnabledEndpointCount ?? 0;
-        var totalFailures = _latestConnectionSnapshot?.Snapshot?.TotalFailureCount ?? 0;
+        var connectedServers = _shellStateService.LatestConnectionSnapshot?.Snapshot?.ConnectedEndpointCount ?? 0;
+        var enabledServers = _shellStateService.LatestConnectionSnapshot?.Snapshot?.EnabledEndpointCount ?? 0;
+        var totalFailures = _shellStateService.LatestConnectionSnapshot?.Snapshot?.TotalFailureCount ?? 0;
 
         StatusServersText.Text = $"Servers connected: {connectedServers}/{enabledServers}";
         StatusFailuresText.Text = $"Failures: {totalFailures}";
 
-        var updatedUtc = _latestConnectionSnapshot?.Snapshot?.UpdatedUtc ?? _latestStartupHealth?.Snapshot?.UpdatedUtc;
+        var updatedUtc = _shellStateService.LatestConnectionSnapshot?.Snapshot?.UpdatedUtc
+            ?? _shellStateService.LatestStartupHealth?.Snapshot?.UpdatedUtc;
         StatusUpdatedText.Text = updatedUtc is null
             ? "Updated: n/a"
             : $"Updated: {updatedUtc.Value:HH:mm:ss} UTC";
-
-        SetStatusActions(status.PrimaryAction, status.SecondaryAction);
-    }
-
-    private ServiceStatusEvaluation EvaluateServiceStatus()
-    {
-        if (!_ipcConnected)
-        {
-            return new ServiceStatusEvaluation(
-                "Service Status: Offline (IPC control channel unavailable)",
-                StatusAction.RetryIpc,
-                StatusAction.OpenLogs);
-        }
-
-        if (_latestStartupHealth?.Snapshot?.Status == StartupHealthStatus.Faulted)
-        {
-            var reason = BuildStartupReasonSuffix(_latestStartupHealth.Snapshot.Reason, fallback: "Service startup failed");
-            return new ServiceStatusEvaluation(
-                $"Service Status: Failed ({reason})",
-                StatusAction.OpenLogs,
-                StatusAction.RetryIpc);
-        }
-
-        if (_latestStartupHealth?.Snapshot?.Status == StartupHealthStatus.Degraded)
-        {
-            var reason = BuildStartupReasonSuffix(_latestStartupHealth.Snapshot.Reason, fallback: "Startup validation warnings");
-            return new ServiceStatusEvaluation(
-                $"Service Status: Limited ({reason})",
-                StatusAction.OpenLogs,
-                StatusAction.Refresh);
-        }
-
-        if (_latestSecuritySnapshot is null || !_latestSecuritySnapshot.Available || _latestSecuritySnapshot.Snapshot is null)
-        {
-            return new ServiceStatusEvaluation(
-                "Service Status: Limited (No security snapshot)",
-                StatusAction.OpenLogs,
-                StatusAction.Refresh);
-        }
-
-        if (_latestSecuritySnapshot.Snapshot.Status == SecurityBootstrapStatus.Faulted)
-        {
-            return new ServiceStatusEvaluation(
-                "Service Status: Failed (Security bootstrap faulted)",
-                StatusAction.OpenLogs,
-                StatusAction.RetryIpc);
-        }
-
-        if (_latestSecuritySnapshot.Snapshot.Status == SecurityBootstrapStatus.Degraded)
-        {
-            return new ServiceStatusEvaluation(
-                "Service Status: Limited (Security trust configuration needs attention)",
-                StatusAction.OpenLogs,
-                StatusAction.Refresh);
-        }
-
-        if (_latestConnectionSnapshot?.Snapshot is null)
-        {
-            return new ServiceStatusEvaluation(
-                "Service Status: Limited (Snapshot refresh pending)",
-                StatusAction.Refresh,
-                StatusAction.OpenLogs);
-        }
-
-        var connected = _latestConnectionSnapshot.Snapshot.ConnectedEndpointCount;
-        var enabled = _latestConnectionSnapshot.Snapshot.EnabledEndpointCount;
-
-        if (connected < enabled)
-        {
-            return new ServiceStatusEvaluation(
-                $"Service Status: Limited (Partial upstream connectivity {connected}/{enabled} connected)",
-                StatusAction.OpenConnections,
-                StatusAction.Refresh);
-        }
-
-        if (LiveOutputViewerView.IsEventStreamConnectionKnown && !LiveOutputViewerView.IsEventStreamConnected)
-        {
-            return new ServiceStatusEvaluation(
-                "Service Status: Limited (Live event stream disconnected)",
-                StatusAction.RetryIpc,
-                StatusAction.Refresh);
-        }
-
-        return new ServiceStatusEvaluation(
-            "Service Status: Connected (All monitored services nominal)",
-            StatusAction.None,
-            StatusAction.None);
-    }
-
-    private static string BuildStartupReasonSuffix(string? startupReason, string fallback)
-    {
-        if (string.IsNullOrWhiteSpace(startupReason))
-        {
-            return fallback;
-        }
-
-        var normalized = startupReason.Trim();
-        if (normalized.StartsWith("Startup failed:", StringComparison.OrdinalIgnoreCase))
-        {
-            return normalized["Startup failed:".Length..].Trim();
-        }
-
-        return normalized;
-    }
-
-    private void SetStatusActions(StatusAction primary, StatusAction secondary)
-    {
-        _primaryStatusAction = primary;
-        _secondaryStatusAction = secondary;
-
-        ConfigureStatusActionButton(StatusPrimaryActionButton, primary);
-        ConfigureStatusActionButton(StatusSecondaryActionButton, secondary);
-
-        StatusActionsPanel.Visibility =
-            primary == StatusAction.None && secondary == StatusAction.None
-                ? Visibility.Collapsed
-                : Visibility.Visible;
-    }
-
-    private static void ConfigureStatusActionButton(Button button, StatusAction action)
-    {
-        if (action == StatusAction.None)
-        {
-            button.Visibility = Visibility.Collapsed;
-            return;
-        }
-
-        button.Visibility = Visibility.Visible;
-        button.Content = action switch
-        {
-            StatusAction.RetryIpc => "Retry IPC",
-            StatusAction.Refresh => "Refresh",
-            StatusAction.OpenLogs => "Open Logs",
-            StatusAction.OpenConnections => "Open Connections",
-            _ => "Action",
-        };
-    }
-
-    private async void StatusPrimaryActionButton_Click(object sender, RoutedEventArgs e)
-    {
-        await ExecuteStatusActionAsync(_primaryStatusAction);
-    }
-
-    private async void StatusSecondaryActionButton_Click(object sender, RoutedEventArgs e)
-    {
-        await ExecuteStatusActionAsync(_secondaryStatusAction);
-    }
-
-    private async Task ExecuteStatusActionAsync(StatusAction action)
-    {
-        if (action == StatusAction.None)
-        {
-            return;
-        }
-
-        StatusPrimaryActionButton.IsEnabled = false;
-        StatusSecondaryActionButton.IsEnabled = false;
-
-        try
-        {
-            switch (action)
-            {
-                case StatusAction.RetryIpc:
-                    await CheckIpcHandshakeAsync();
-                    break;
-                case StatusAction.Refresh:
-                    await RefreshSnapshotsAsync();
-                    break;
-                case StatusAction.OpenLogs:
-                    MainTabs.SelectedItem = LogsTab;
-                    break;
-                case StatusAction.OpenConnections:
-                    MainTabs.SelectedItem = ConnectionsTab;
-                    break;
-            }
-        }
-        finally
-        {
-            await Task.Delay(1000);
-            StatusPrimaryActionButton.IsEnabled = true;
-            StatusSecondaryActionButton.IsEnabled = true;
-        }
     }
 
     private void ThemeSystem_Click(object sender, RoutedEventArgs e)
@@ -437,6 +350,7 @@ public sealed partial class MainWindow : Window
             root.RequestedTheme = theme;
         }
 
+        _settingsPage.SetSelectedTheme(MapThemeToSelection(_selectedTheme));
         ApplyShellPalette();
     }
 
@@ -456,10 +370,6 @@ public sealed partial class MainWindow : Window
         SetBrushColor("ShellToolbarBackgroundBrush", palette.ToolbarBackground);
         SetBrushColor("ShellTabStripBackgroundBrush", palette.TabStripBackground);
         SetBrushColor("ShellSurfaceBorderBrush", palette.SurfaceBorder);
-
-        SetTabHeaderBrush("TabViewItemHeaderBackground", palette.TabHeaderBackground);
-        SetTabHeaderBrush("TabViewItemHeaderBackgroundSelected", palette.TabHeaderBackgroundSelected);
-        SetTabHeaderBrush("TabViewItemHeaderBackgroundPointerOver", palette.TabHeaderBackgroundPointerOver);
     }
 
     private static ShellPaletteColors ResolvePalette(ElementTheme effectiveTheme, ShellPalette palette)
@@ -471,33 +381,21 @@ public sealed partial class MainWindow : Window
             ShellPalette.VSCode when isDark => new ShellPaletteColors(
                 ToolbarBackground: ColorHelper.FromArgb(0xFF, 0x3C, 0x3C, 0x3C),
                 TabStripBackground: ColorHelper.FromArgb(0xFF, 0x25, 0x25, 0x26),
-                TabHeaderBackground: ColorHelper.FromArgb(0xFF, 0x2D, 0x2D, 0x30),
-                TabHeaderBackgroundSelected: ColorHelper.FromArgb(0xFF, 0x1E, 0x1E, 0x1E),
-                TabHeaderBackgroundPointerOver: ColorHelper.FromArgb(0xFF, 0x37, 0x37, 0x3D),
                 SurfaceBorder: ColorHelper.FromArgb(0xFF, 0x55, 0x55, 0x5A)
             ),
             ShellPalette.VSCode => new ShellPaletteColors(
                 ToolbarBackground: ColorHelper.FromArgb(0xFF, 0xE7, 0xE7, 0xE7),
                 TabStripBackground: ColorHelper.FromArgb(0xFF, 0xF3, 0xF3, 0xF3),
-                TabHeaderBackground: ColorHelper.FromArgb(0xFF, 0xEA, 0xEA, 0xEA),
-                TabHeaderBackgroundSelected: ColorHelper.FromArgb(0xFF, 0xFF, 0xFF, 0xFF),
-                TabHeaderBackgroundPointerOver: ColorHelper.FromArgb(0xFF, 0xE0, 0xE0, 0xE0),
                 SurfaceBorder: ColorHelper.FromArgb(0xFF, 0xC8, 0xC8, 0xC8)
             ),
             _ when isDark => new ShellPaletteColors(
                 ToolbarBackground: ColorHelper.FromArgb(0xFF, 0x25, 0x25, 0x2A),
                 TabStripBackground: ColorHelper.FromArgb(0xFF, 0x1F, 0x20, 0x24),
-                TabHeaderBackground: ColorHelper.FromArgb(0xFF, 0x2A, 0x2C, 0x31),
-                TabHeaderBackgroundSelected: ColorHelper.FromArgb(0xFF, 0x3A, 0x3D, 0x45),
-                TabHeaderBackgroundPointerOver: ColorHelper.FromArgb(0xFF, 0x34, 0x37, 0x40),
                 SurfaceBorder: ColorHelper.FromArgb(0xFF, 0x4A, 0x4E, 0x57)
             ),
             _ => new ShellPaletteColors(
                 ToolbarBackground: ColorHelper.FromArgb(0xFF, 0xF3, 0xF3, 0xF3),
                 TabStripBackground: ColorHelper.FromArgb(0xFF, 0xEC, 0xEC, 0xEC),
-                TabHeaderBackground: ColorHelper.FromArgb(0xFF, 0xF6, 0xF6, 0xF6),
-                TabHeaderBackgroundSelected: ColorHelper.FromArgb(0xFF, 0xFF, 0xFF, 0xFF),
-                TabHeaderBackgroundPointerOver: ColorHelper.FromArgb(0xFF, 0xE8, 0xE8, 0xE8),
                 SurfaceBorder: ColorHelper.FromArgb(0xFF, 0xC8, 0xC8, 0xC8)
             ),
         };
@@ -511,11 +409,101 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void SetTabHeaderBrush(string key, Color color)
+    private void ShellNavigation_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
-        if (MainTabs.Resources.TryGetValue(key, out var resource) && resource is SolidColorBrush brush)
+        if (args.IsSettingsSelected)
         {
-            brush.Color = color;
+            NavigateToRoute(ShellRouteKeys.Settings, updateSelection: false);
+            return;
+        }
+
+        if (args.SelectedItem is NavigationViewItem item && item.Tag is string route)
+        {
+            NavigateToRoute(route, updateSelection: false);
+        }
+    }
+
+    private void SettingsPage_ThemeSelectionRequested(string selection)
+    {
+        var theme = selection switch
+        {
+            "System" => ElementTheme.Default,
+            "Light" => ElementTheme.Light,
+            "Dark" => ElementTheme.Dark,
+            _ => ElementTheme.Default,
+        };
+
+        ApplyTheme(theme);
+    }
+
+    private void SettingsPage_PaletteSelectionRequested(string selection)
+    {
+        _selectedPalette = selection switch
+        {
+            "VSCode" => ShellPalette.VSCode,
+            _ => ShellPalette.WinUI,
+        };
+
+        _settingsPage.SetSelectedPalette(MapPaletteToSelection(_selectedPalette));
+        ApplyShellPalette();
+    }
+
+    private void SettingsPage_HelpRequested()
+    {
+        DocumentationHelp_Click(this, new RoutedEventArgs());
+    }
+
+    private void ShellNavigation_BackRequested(NavigationView sender, NavigationViewBackRequestedEventArgs args)
+    {
+        if (_routeBackStack.Count == 0)
+        {
+            return;
+        }
+
+        var previousRoute = _routeBackStack.Pop();
+        NavigateToRoute(previousRoute, updateSelection: true, preserveBackStack: true);
+    }
+
+    private void NavigateToRoute(string route, bool updateSelection, bool preserveBackStack = false)
+    {
+        if (string.Equals(route, _currentRoute, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (!preserveBackStack && !string.IsNullOrWhiteSpace(_currentRoute))
+        {
+            _routeBackStack.Push(_currentRoute);
+        }
+
+        Page page = _navigationCoordinator.GetPage(route);
+
+        ShellFrame.Content = page;
+        _currentRoute = route;
+
+        var showHeader = !string.Equals(route, ShellRouteKeys.Connections, StringComparison.Ordinal);
+        ShellNavigation.Header = showHeader ? ShellHeaderContainer : null;
+        ShellHeaderText.Visibility = showHeader ? Visibility.Visible : Visibility.Collapsed;
+
+        ShellHeaderText.Text = _navigationCoordinator.TryGetRoute(route, out var title)
+            ? title
+            : "Dashboard";
+        ShellNavigation.IsBackEnabled = _routeBackStack.Count > 0;
+
+        if (updateSelection)
+        {
+            object selectedItem = route switch
+            {
+                ShellRouteKeys.Dashboard => DashboardNavItem,
+                ShellRouteKeys.Connections => ConnectionsNavItem,
+                ShellRouteKeys.ServerSettings => ServerSettingsNavItem,
+                ShellRouteKeys.Logs => LogsNavItem,
+                ShellRouteKeys.LiveOutput => LiveOutputNavItem,
+                ShellRouteKeys.Settings => ShellNavigation.SettingsItem,
+                _ => DashboardNavItem,
+            };
+
+            ShellNavigation.SelectedItem = selectedItem;
         }
     }
 
@@ -525,26 +513,29 @@ public sealed partial class MainWindow : Window
         VSCode,
     }
 
+    private static string MapThemeToSelection(ElementTheme theme)
+    {
+        return theme switch
+        {
+            ElementTheme.Light => "Light",
+            ElementTheme.Dark => "Dark",
+            _ => "System",
+        };
+    }
+
+    private static string MapPaletteToSelection(ShellPalette palette)
+    {
+        return palette switch
+        {
+            ShellPalette.VSCode => "VSCode",
+            _ => "WinUI",
+        };
+    }
+
     private readonly record struct ShellPaletteColors(
         Color ToolbarBackground,
         Color TabStripBackground,
-        Color TabHeaderBackground,
-        Color TabHeaderBackgroundSelected,
-        Color TabHeaderBackgroundPointerOver,
         Color SurfaceBorder
     );
 
-    private readonly record struct ServiceStatusEvaluation(
-        string Text,
-        StatusAction PrimaryAction,
-        StatusAction SecondaryAction);
-
-    private enum StatusAction
-    {
-        None,
-        RetryIpc,
-        Refresh,
-        OpenLogs,
-        OpenConnections,
-    }
 }

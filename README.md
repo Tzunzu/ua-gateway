@@ -11,6 +11,7 @@ UA Gateway is an open-source Windows OPC UA gateway for PLC and SCADA environmen
 - `src/UAGateway.Service` - Windows Service host that manages upstream connections and the local OPC UA server
 - `src/UAGateway.UI` - Windows-only desktop UI for monitoring and configuration (WinUI 3)
 - `tests/UAGateway.Core.Tests` - core logic tests
+- `assets/brand` - shared branding source assets such as the canonical SVG/ICO app icon
 
 ## Design goals
 

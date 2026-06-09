@@ -133,3 +133,41 @@ public sealed class NamespaceMappingConfigurationStoreTests
         catch { }
     }
 }
+
+public sealed class UpstreamEndpointCredentialStoreTests
+{
+    [Fact]
+    public void SaveLoadAndRemoveCredential_RoundTrips_WhenWindows()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var dir = Path.Combine(Path.GetTempPath(), "ua-gateway-tests", Guid.NewGuid().ToString("N"));
+        try
+        {
+            UpstreamEndpointCredentialStore.SaveUsernamePassword("cred-1", "operator", "secret", dir);
+
+            var credential = UpstreamEndpointCredentialStore.TryLoadUsernamePassword("cred-1", dir);
+            Assert.NotNull(credential);
+            Assert.Equal("operator", credential!.Username);
+            Assert.Equal("secret", credential.Password);
+
+            UpstreamEndpointCredentialStore.RemoveCredential("cred-1", dir);
+
+            var removed = UpstreamEndpointCredentialStore.TryLoadUsernamePassword("cred-1", dir);
+            Assert.Null(removed);
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(dir, recursive: true);
+            }
+            catch
+            {
+            }
+        }
+    }
+}

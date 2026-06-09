@@ -1,6 +1,6 @@
 # Implementation Tracker
 
-Last Updated: 2026-06-04
+Last Updated: 2026-06-09
 
 ## How to use this file
 
@@ -130,7 +130,7 @@ Purpose: make connection management predictable under failure, reconnect, and mu
 
 | ID | Priority | Task | Estimate (h) | Depends On | Status | Done Criteria |
 |---|---|---|---:|---|---|---|
-| M7-01 | P0 | Formalize connection state machine and transition rules | 12-20 | M3-02 | Todo | Valid states, transitions, retries, and terminal conditions are explicit in code and docs |
+| M7-01 | P0 | Formalize connection state machine and transition rules | 12-20 | M3-02 | In Progress | Valid states, transitions, retries, and terminal conditions are explicit in code and docs |
 | M7-02 | P0 | Harden reconnect, backoff, and stale-session cleanup behavior | 18-30 | M7-01 | Todo | Reconnect behavior is deterministic and stale sessions/resources are cleaned up safely |
 | M7-03 | P0 | Expand endpoint/session health metrics and transition history | 12-20 | M3-03, M7-01 | Todo | Health snapshots capture actionable per-endpoint state and recent transitions |
 | M7-04 | P0 | Add regression tests for disconnect storms and partial recovery | 18-30 | M7-02, M7-03 | Todo | Tests cover repeated disconnects, mixed endpoint health, and recovery sequencing |
@@ -169,14 +169,36 @@ Recommended first in-progress task:
 - Start M7-01 by formalizing the connection state machine and transition rules.
 - Follow immediately with M7-02 reconnect/backoff hardening to lock deterministic recovery behavior.
 
-Current status note (2026-06-04):
+Current status note (2026-06-09):
 - M6 is complete and validated with green build/tests.
-- M7 is intentionally deferred for now due session AI budget constraints.
-- Next session should resume at M7-01 unless priorities change.
+- WinUI shell rework phases 1-5 are implemented and validated with green build/tests.
+- Next runtime milestone should resume at M7-01 unless UI verification priorities change.
+
+Progress notes for Connections rework and endpoint settings (2026-06-09):
+- Connections page header actions removed from shell header (Refresh and Help) to simplify operator focus during configuration edits.
+- Connections editor now uses a full-height two-panel layout and removed top text labels previously shown above the editor area.
+- Shell footer removed explicit UI-Service connected text while preserving service/servers/failures/updated status and recovery actions.
+- Upstream endpoint model expanded with security/authentication/transport/retry settings and validator coverage for allowed values and numeric bounds.
+- New encrypted credential store (`upstream-endpoint-credentials.json`) added using Windows DPAPI to keep username/password out of `upstream-endpoints.json`.
+- Service lifecycle probe now consumes per-endpoint timeout/retry/security/auth settings for scheduling and configuration validation paths.
+- Connections editor settings UI now follows reusable custom controls (`SettingsSectionCard`, `SettingsFieldBox`) with `ItemsControl + WrapGrid` flow layout for compact wrapping.
+- Standardized field sizing and combo minimum width are centralized in `ConnectionsEditor.xaml` resources to keep future settings additions visually consistent.
+- Added endpoint-level OPC UA subscription tuning settings (publishing interval, sampling interval, queue size, max items per subscription) across Core schema/validation, service runtime configuration plumbing, and Connections editor controls.
+- Expanded subscription tuning set with keep alive count, lifetime count, max notifications per publish, publishing enabled, priority, and discard-oldest behavior to align with OPC UA .NET client subscription API capabilities.
+
+Progress notes for WinUI shell rework (2026-06-09):
+- Main shell migrated from MenuBar/TabView to NavigationView + Frame + route-based page composition.
+- Route key constants and a navigation coordinator now keep route-to-page mapping deterministic.
+- Shell title bar wiring uses `ExtendsContentIntoTitleBar` and a custom draggable title bar region.
+- IPC handshake/snapshot refresh/status evaluation logic moved from `MainWindow` into `ShellStateService`.
+- Shell palette and spacing/motion tokens moved into `Themes/StSoft.*Tokens.xaml` dictionaries and merged in `App.xaml`.
+- Settings command placement is now explicit via NavigationView Settings route with theme/palette/help controls.
 
 Progress notes for M6:
 - Local server startup now reads persisted server settings from `config/server-settings.json` and validates host, port, and endpoint path before binding the OPC UA listener.
 - WinUI now exposes a `Server Settings` tab for local listener settings with endpoint preview, restart-required messaging, and reload/apply handling consistent with other configuration editors.
+- Server Settings editor now follows the same reusable UI layout system as Connections (`SettingsSectionCard` + `SettingsFieldBox`) with full-height two-panel composition and aligned field grids.
+- Local server settings schema now includes server identity and security/token policy controls (`applicationName`, `productUri`, `securityMode`, `securityPolicy`, `allowAnonymous`, `allowUsernamePassword`) and service startup now consumes these settings instead of hardcoded values.
 - Port-conflict startup failures now report the configured listener address so operator recovery is explicit.
 - Startup fault reasons now map invalid configuration modes to deterministic operator messages (invalid server settings JSON, invalid server settings values, invalid upstream endpoint config, invalid namespace mapping config).
 - Added focused store/validation failure-path tests for server settings creation, malformed JSON, null payloads, and invalid persisted port values.

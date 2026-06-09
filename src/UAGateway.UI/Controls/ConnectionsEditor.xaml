@@ -4,13 +4,28 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:local="using:UAGateway.UI.Controls"
     mc:Ignorable="d">
-    <StackPanel Padding="12"
-                Spacing="8">
-        <TextBlock x:Name="ConnectionsHeaderText"
-                   FontWeight="SemiBold" />
+    <UserControl.Resources>
+        <x:Double x:Key="SettingFieldCompactWidth">190</x:Double>
+        <x:Double x:Key="SettingFieldStandardWidth">240</x:Double>
+        <x:Double x:Key="SettingFieldWideWidth">320</x:Double>
+        <x:Double x:Key="SettingFieldExtraWideWidth">620</x:Double>
+        <x:Double x:Key="SettingComboMinWidth">170</x:Double>
+        <Thickness x:Key="SettingFieldMargin">0,0,12,8</Thickness>
+        <Style TargetType="ComboBox">
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+        </Style>
+    </UserControl.Resources>
+    <Grid Padding="12"
+          RowSpacing="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
 
-        <Grid ColumnSpacing="16"
+        <Grid Grid.Row="0"
+              ColumnSpacing="16"
               RowSpacing="8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="360" />
@@ -19,82 +34,451 @@
 
             <Border Grid.Column="0"
                     Padding="12"
+                    VerticalAlignment="Stretch"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="8">
-                <StackPanel Spacing="8">
-                    <StackPanel Orientation="Horizontal"
-                                HorizontalAlignment="Stretch"
-                                Spacing="8">
-                        <TextBlock Text="Connections"
-                                   VerticalAlignment="Center"
-                                   FontSize="18"
-                                   FontWeight="SemiBold" />
-                        <Button Content="Add Connection"
-                                HorizontalAlignment="Right"
-                                Click="AddConnectionDraft_Click" />
-                    </StackPanel>
+                <Grid RowSpacing="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Button Grid.Row="0"
+                            Content="Add Connection"
+                            HorizontalAlignment="Left"
+                            Click="AddConnectionDraft_Click" />
 
                     <ListView x:Name="ConnectionsList"
+                              Grid.Row="1"
                               BorderBrush="{ThemeResource ControlStrokeColorSecondaryBrush}"
                               BorderThickness="1"
-                              MinHeight="420"
+                              VerticalAlignment="Stretch"
                               SelectionChanged="ConnectionsList_SelectionChanged" />
-                </StackPanel>
+                </Grid>
             </Border>
 
             <Border Grid.Column="1"
                     Padding="12"
+                    VerticalAlignment="Stretch"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="8">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="Connection Settings"
-                               FontSize="18"
-                               FontWeight="SemiBold" />
-                    <TextBlock x:Name="SelectedConnectionHintText"
-                               Opacity="0.75"
-                               Text="Select a connection to edit its configuration." />
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              VerticalScrollMode="Auto">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="Connection Settings"
+                                   FontSize="18"
+                                   FontWeight="SemiBold" />
+                        <TextBlock x:Name="SelectedConnectionHintText"
+                                   Opacity="0.75"
+                                   Text="Select a connection to edit its configuration." />
 
-                    <TextBlock Text="Connection ID"
-                               FontWeight="SemiBold" />
-                    <TextBox x:Name="SelectedConnectionIdTextBox"
-                             IsReadOnly="True"
-                             PlaceholderText="No connection selected" />
+                        <StackPanel Spacing="12">
+                            <local:SettingsSectionCard Title="Basics">
+                                <local:SettingsSectionCard.SectionContent>
+                                    <Grid ColumnSpacing="12"
+                                          RowSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="190" />
+                                            <ColumnDefinition Width="300" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
 
-                    <TextBlock Text="Display Name"
-                               FontWeight="SemiBold" />
-                    <TextBox x:Name="DraftDisplayNameTextBox"
-                             PlaceholderText="Display name"
-                             LostFocus="DraftDisplayNameTextBox_LostFocus" />
+                                        <StackPanel Grid.Row="0"
+                                                    Grid.Column="0"
+                                                    Spacing="4">
+                                            <TextBlock Text="Enabled"
+                                                       FontWeight="SemiBold" />
+                                            <ToggleSwitch x:Name="DraftEnabledToggle"
+                                                          Toggled="DraftEnabledToggle_Toggled" />
+                                        </StackPanel>
 
-                    <TextBlock Text="Endpoint URL"
-                               FontWeight="SemiBold" />
-                    <TextBox x:Name="DraftEndpointUrlTextBox"
-                             PlaceholderText="opc.tcp://host:port/path"
-                             LostFocus="DraftEndpointUrlTextBox_LostFocus" />
+                                        <StackPanel Grid.Row="0"
+                                                    Grid.Column="1"
+                                                    Spacing="4">
+                                            <TextBlock Text="Display Name"
+                                                       FontWeight="SemiBold" />
+                                            <TextBox x:Name="DraftDisplayNameTextBox"
+                                                     PlaceholderText="Display name"
+                                                     LostFocus="DraftDisplayNameTextBox_LostFocus" />
+                                        </StackPanel>
 
-                    <ToggleSwitch x:Name="DraftEnabledToggle"
-                                  Header="Enabled"
-                                  Toggled="DraftEnabledToggle_Toggled" />
+                                        <StackPanel Grid.Row="1"
+                                                    Grid.Column="0"
+                                                    Grid.ColumnSpan="3"
+                                                    Spacing="4">
+                                            <TextBlock Text="Endpoint URL"
+                                                       FontWeight="SemiBold" />
+                                            <Grid ColumnSpacing="8">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBox Grid.Column="0"
+                                                         x:Name="DraftEndpointUrlTextBox"
+                                                         Text="opc.tcp://localhost:4840"
+                                                         LostFocus="DraftEndpointUrlTextBox_LostFocus" />
+                                                <Button Grid.Column="1"
+                                                        Content="..."
+                                                        ToolTipService.ToolTip="Endpoint discovery (coming later)"
+                                                        Click="DraftEndpointDiscoveryButton_Click" />
+                                            </Grid>
+                                        </StackPanel>
 
-                    <StackPanel Orientation="Horizontal"
-                                Spacing="8">
-                        <Button x:Name="ReloadConfigurationButton"
-                            Content="Reload Configuration"
-                                Click="ReloadConnectionsDraft_Click" />
-                        <Button x:Name="ApplyConfigurationButton"
-                            Content="Apply Configuration"
-                                Click="ApplyConnectionsDraft_Click" />
+                                        <Button Grid.Row="2"
+                                                Grid.Column="0"
+                                            x:Name="DraftTestConnectionButton"
+                                                Content="Test Connection"
+                                                HorizontalAlignment="Left"
+                                                Click="DraftTestConnectionButton_Click" />
+                                    </Grid>
+                                </local:SettingsSectionCard.SectionContent>
+                            </local:SettingsSectionCard>
+
+                            <local:SettingsSectionCard Title="Security">
+                                <local:SettingsSectionCard.SectionContent>
+                                    <StackPanel Spacing="8">
+                                        <ItemsControl>
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapGrid Orientation="Horizontal" />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+
+                                            <local:SettingsFieldBox Label="Security Mode"
+                                                                    FieldWidth="{StaticResource SettingFieldStandardWidth}"
+                                                                    Margin="{StaticResource SettingFieldMargin}">
+                                                <local:SettingsFieldBox.FieldContent>
+                                                    <ComboBox x:Name="DraftSecurityModeComboBox"
+                                                              MinWidth="{StaticResource SettingComboMinWidth}"
+                                                              SelectionChanged="DraftSecurityModeComboBox_SelectionChanged">
+                                                        <ComboBoxItem Content="None" />
+                                                        <ComboBoxItem Content="Sign" />
+                                                        <ComboBoxItem Content="SignAndEncrypt" />
+                                                    </ComboBox>
+                                                </local:SettingsFieldBox.FieldContent>
+                                            </local:SettingsFieldBox>
+
+                                            <local:SettingsFieldBox Label="Security Policy"
+                                                                    FieldWidth="{StaticResource SettingFieldStandardWidth}"
+                                                                    Margin="{StaticResource SettingFieldMargin}">
+                                                <local:SettingsFieldBox.FieldContent>
+                                                    <ComboBox x:Name="DraftSecurityPolicyComboBox"
+                                                              MinWidth="{StaticResource SettingComboMinWidth}"
+                                                              SelectionChanged="DraftSecurityPolicyComboBox_SelectionChanged">
+                                                        <ComboBoxItem Content="None" />
+                                                        <ComboBoxItem Content="Basic128Rsa15" />
+                                                        <ComboBoxItem Content="Basic256" />
+                                                        <ComboBoxItem Content="Basic256Sha256" />
+                                                        <ComboBoxItem Content="Aes128Sha256RsaOaep" />
+                                                        <ComboBoxItem Content="Aes256Sha256RsaPss" />
+                                                    </ComboBox>
+                                                </local:SettingsFieldBox.FieldContent>
+                                            </local:SettingsFieldBox>
+                                        </ItemsControl>
+
+                                        <ToggleSwitch x:Name="DraftAutoAcceptUntrustedToggle"
+                                                      Header="Auto-accept untrusted certificates"
+                                                      Toggled="DraftAutoAcceptUntrustedToggle_Toggled" />
+
+                                        <Button x:Name="DraftViewCertificateButton"
+                                                Content="View Certificate"
+                                                HorizontalAlignment="Left"
+                                                Click="DraftViewCertificateButton_Click" />
+                                    </StackPanel>
+                                </local:SettingsSectionCard.SectionContent>
+                            </local:SettingsSectionCard>
+
+                            <local:SettingsSectionCard Title="Authentication">
+                                <local:SettingsSectionCard.SectionContent>
+                                    <StackPanel Spacing="8">
+                                        <ItemsControl>
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapGrid Orientation="Horizontal" />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+
+                                            <local:SettingsFieldBox Label="Authentication"
+                                                                    FieldWidth="{StaticResource SettingFieldStandardWidth}"
+                                                                    Margin="{StaticResource SettingFieldMargin}">
+                                                <local:SettingsFieldBox.FieldContent>
+                                                    <ComboBox x:Name="DraftAuthenticationModeComboBox"
+                                                              MinWidth="{StaticResource SettingComboMinWidth}"
+                                                              SelectionChanged="DraftAuthenticationModeComboBox_SelectionChanged">
+                                                        <ComboBoxItem Content="Anonymous" />
+                                                        <ComboBoxItem Content="UsernamePassword" />
+                                                    </ComboBox>
+                                                </local:SettingsFieldBox.FieldContent>
+                                            </local:SettingsFieldBox>
+
+                                            <local:SettingsFieldBox Label="Username"
+                                                                    FieldWidth="{StaticResource SettingFieldStandardWidth}"
+                                                                    Margin="{StaticResource SettingFieldMargin}">
+                                                <local:SettingsFieldBox.FieldContent>
+                                                    <TextBox x:Name="DraftCredentialUsernameTextBox"
+                                                             PlaceholderText="username"
+                                                             LostFocus="DraftCredentialUsernameTextBox_LostFocus" />
+                                                </local:SettingsFieldBox.FieldContent>
+                                            </local:SettingsFieldBox>
+
+                                            <local:SettingsFieldBox Label="Password"
+                                                                    FieldWidth="492"
+                                                                    Margin="{StaticResource SettingFieldMargin}">
+                                                <local:SettingsFieldBox.FieldContent>
+                                                    <PasswordBox x:Name="DraftCredentialPasswordBox"
+                                                                 PasswordChanged="DraftCredentialPasswordBox_PasswordChanged" />
+                                                </local:SettingsFieldBox.FieldContent>
+                                            </local:SettingsFieldBox>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </local:SettingsSectionCard.SectionContent>
+                            </local:SettingsSectionCard>
+
+                            <local:SettingsSectionCard Title="Timing">
+                                <local:SettingsSectionCard.SectionContent>
+                                    <ItemsControl>
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapGrid Orientation="Horizontal" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+
+                                        <local:SettingsFieldBox Label="Connection Timeout (ms)"
+                                                                FieldWidth="{StaticResource SettingFieldCompactWidth}"
+                                                                Margin="{StaticResource SettingFieldMargin}">
+                                            <local:SettingsFieldBox.FieldContent>
+                                                <TextBox x:Name="DraftConnectionTimeoutTextBox"
+                                                         PlaceholderText="5000"
+                                                         LostFocus="DraftConnectionTimeoutTextBox_LostFocus" />
+                                            </local:SettingsFieldBox.FieldContent>
+                                        </local:SettingsFieldBox>
+
+                                        <local:SettingsFieldBox Label="Operation Timeout (ms)"
+                                                                FieldWidth="{StaticResource SettingFieldCompactWidth}"
+                                                                Margin="{StaticResource SettingFieldMargin}">
+                                            <local:SettingsFieldBox.FieldContent>
+                                                <TextBox x:Name="DraftOperationTimeoutTextBox"
+                                                         PlaceholderText="15000"
+                                                         LostFocus="DraftOperationTimeoutTextBox_LostFocus" />
+                                            </local:SettingsFieldBox.FieldContent>
+                                        </local:SettingsFieldBox>
+
+                                        <local:SettingsFieldBox Label="Session Timeout (ms)"
+                                                                FieldWidth="{StaticResource SettingFieldCompactWidth}"
+                                                                Margin="{StaticResource SettingFieldMargin}">
+                                            <local:SettingsFieldBox.FieldContent>
+                                                <TextBox x:Name="DraftSessionTimeoutTextBox"
+                                                         PlaceholderText="60000"
+                                                         LostFocus="DraftSessionTimeoutTextBox_LostFocus" />
+                                            </local:SettingsFieldBox.FieldContent>
+                                        </local:SettingsFieldBox>
+                                    </ItemsControl>
+                                </local:SettingsSectionCard.SectionContent>
+                            </local:SettingsSectionCard>
+
+                            <local:SettingsSectionCard Title="Subscription">
+                                <local:SettingsSectionCard.SectionContent>
+                                    <ItemsControl>
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapGrid Orientation="Horizontal" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+
+                                        <local:SettingsFieldBox Label="Publishing Interval (ms)"
+                                                                FieldWidth="{StaticResource SettingFieldCompactWidth}"
+                                                                Margin="{StaticResource SettingFieldMargin}">
+                                            <local:SettingsFieldBox.FieldContent>
+                                                <TextBox x:Name="DraftPublishingIntervalTextBox"
+                                                         PlaceholderText="1000"
+                                                         LostFocus="DraftPublishingIntervalTextBox_LostFocus" />
+                                            </local:SettingsFieldBox.FieldContent>
+                                        </local:SettingsFieldBox>
+
+                                        <local:SettingsFieldBox Label="Sampling Interval (ms)"
+                                                                FieldWidth="{StaticResource SettingFieldCompactWidth}"
+                                                                Margin="{StaticResource SettingFieldMargin}">
+                                            <local:SettingsFieldBox.FieldContent>
+                                                <TextBox x:Name="DraftSamplingIntervalTextBox"
+                                                         PlaceholderText="1000"
+                                                         LostFocus="DraftSamplingIntervalTextBox_LostFocus" />
+                                            </local:SettingsFieldBox.FieldContent>
+                                        </local:SettingsFieldBox>
+
+                                        <local:SettingsFieldBox Label="Queue Size"
+                                                                FieldWidth="{StaticResource SettingFieldCompactWidth}"
+                                                                Margin="{StaticResource SettingFieldMargin}">
+                                            <local:SettingsFieldBox.FieldContent>
+                                                <TextBox x:Name="DraftQueueSizeTextBox"
+                                                         PlaceholderText="100"
+                                                         LostFocus="DraftQueueSizeTextBox_LostFocus" />
+                                            </local:SettingsFieldBox.FieldContent>
+                                        </local:SettingsFieldBox>
+
+                                        <local:SettingsFieldBox Label="Max Items / Subscription"
+                                                                FieldWidth="{StaticResource SettingFieldCompactWidth}"
+                                                                Margin="{StaticResource SettingFieldMargin}">
+                                            <local:SettingsFieldBox.FieldContent>
+                                                <TextBox x:Name="DraftMaxItemsPerSubscriptionTextBox"
+                                                         PlaceholderText="500"
+                                                         LostFocus="DraftMaxItemsPerSubscriptionTextBox_LostFocus" />
+                                            </local:SettingsFieldBox.FieldContent>
+                                        </local:SettingsFieldBox>
+
+                                        <local:SettingsFieldBox Label="Keep Alive Count"
+                                                                FieldWidth="{StaticResource SettingFieldCompactWidth}"
+                                                                Margin="{StaticResource SettingFieldMargin}">
+                                            <local:SettingsFieldBox.FieldContent>
+                                                <TextBox x:Name="DraftKeepAliveCountTextBox"
+                                                         PlaceholderText="10"
+                                                         LostFocus="DraftKeepAliveCountTextBox_LostFocus" />
+                                            </local:SettingsFieldBox.FieldContent>
+                                        </local:SettingsFieldBox>
+
+                                        <local:SettingsFieldBox Label="Lifetime Count"
+                                                                FieldWidth="{StaticResource SettingFieldCompactWidth}"
+                                                                Margin="{StaticResource SettingFieldMargin}">
+                                            <local:SettingsFieldBox.FieldContent>
+                                                <TextBox x:Name="DraftLifetimeCountTextBox"
+                                                         PlaceholderText="30"
+                                                         LostFocus="DraftLifetimeCountTextBox_LostFocus" />
+                                            </local:SettingsFieldBox.FieldContent>
+                                        </local:SettingsFieldBox>
+
+                                        <local:SettingsFieldBox Label="Max Notifications / Publish"
+                                                                FieldWidth="{StaticResource SettingFieldCompactWidth}"
+                                                                Margin="{StaticResource SettingFieldMargin}">
+                                            <local:SettingsFieldBox.FieldContent>
+                                                <TextBox x:Name="DraftMaxNotificationsPerPublishTextBox"
+                                                         PlaceholderText="0"
+                                                         LostFocus="DraftMaxNotificationsPerPublishTextBox_LostFocus" />
+                                            </local:SettingsFieldBox.FieldContent>
+                                        </local:SettingsFieldBox>
+
+                                        <local:SettingsFieldBox Label="Priority"
+                                                                FieldWidth="{StaticResource SettingFieldCompactWidth}"
+                                                                Margin="{StaticResource SettingFieldMargin}">
+                                            <local:SettingsFieldBox.FieldContent>
+                                                <TextBox x:Name="DraftSubscriptionPriorityTextBox"
+                                                         PlaceholderText="0"
+                                                         LostFocus="DraftSubscriptionPriorityTextBox_LostFocus" />
+                                            </local:SettingsFieldBox.FieldContent>
+                                        </local:SettingsFieldBox>
+
+                                        <local:SettingsFieldBox Label="Publishing Enabled"
+                                                                FieldWidth="{StaticResource SettingFieldCompactWidth}"
+                                                                Margin="{StaticResource SettingFieldMargin}">
+                                            <local:SettingsFieldBox.FieldContent>
+                                                <ToggleSwitch x:Name="DraftPublishingEnabledToggle"
+                                                              Toggled="DraftPublishingEnabledToggle_Toggled" />
+                                            </local:SettingsFieldBox.FieldContent>
+                                        </local:SettingsFieldBox>
+
+                                        <local:SettingsFieldBox Label="Discard Oldest"
+                                                                FieldWidth="{StaticResource SettingFieldCompactWidth}"
+                                                                Margin="{StaticResource SettingFieldMargin}">
+                                            <local:SettingsFieldBox.FieldContent>
+                                                <ToggleSwitch x:Name="DraftDiscardOldestToggle"
+                                                              Toggled="DraftDiscardOldestToggle_Toggled" />
+                                            </local:SettingsFieldBox.FieldContent>
+                                        </local:SettingsFieldBox>
+                                    </ItemsControl>
+                                </local:SettingsSectionCard.SectionContent>
+                            </local:SettingsSectionCard>
+
+                            <local:SettingsSectionCard Title="Retry">
+                                <local:SettingsSectionCard.SectionContent>
+                                    <ItemsControl>
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapGrid Orientation="Horizontal" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+
+                                        <local:SettingsFieldBox Label="Retry Strategy"
+                                                                FieldWidth="{StaticResource SettingFieldCompactWidth}"
+                                                                Margin="{StaticResource SettingFieldMargin}">
+                                            <local:SettingsFieldBox.FieldContent>
+                                                <ComboBox x:Name="DraftRetryStrategyComboBox"
+                                                          MinWidth="{StaticResource SettingComboMinWidth}"
+                                                          SelectionChanged="DraftRetryStrategyComboBox_SelectionChanged">
+                                                    <ComboBoxItem Content="Exponential" />
+                                                    <ComboBoxItem Content="Linear" />
+                                                    <ComboBoxItem Content="Fixed" />
+                                                </ComboBox>
+                                            </local:SettingsFieldBox.FieldContent>
+                                        </local:SettingsFieldBox>
+
+                                        <local:SettingsFieldBox Label="Retry Initial Delay (s)"
+                                                                FieldWidth="{StaticResource SettingFieldCompactWidth}"
+                                                                Margin="{StaticResource SettingFieldMargin}">
+                                            <local:SettingsFieldBox.FieldContent>
+                                                <TextBox x:Name="DraftRetryInitialDelayTextBox"
+                                                         PlaceholderText="2"
+                                                         LostFocus="DraftRetryInitialDelayTextBox_LostFocus" />
+                                            </local:SettingsFieldBox.FieldContent>
+                                        </local:SettingsFieldBox>
+
+                                        <local:SettingsFieldBox Label="Retry Max Delay (s)"
+                                                                FieldWidth="{StaticResource SettingFieldCompactWidth}"
+                                                                Margin="{StaticResource SettingFieldMargin}">
+                                            <local:SettingsFieldBox.FieldContent>
+                                                <TextBox x:Name="DraftRetryMaxDelayTextBox"
+                                                         PlaceholderText="60"
+                                                         LostFocus="DraftRetryMaxDelayTextBox_LostFocus" />
+                                            </local:SettingsFieldBox.FieldContent>
+                                        </local:SettingsFieldBox>
+
+                                        <local:SettingsFieldBox Label="Max Attempts (0 = unlimited)"
+                                                                FieldWidth="{StaticResource SettingFieldCompactWidth}"
+                                                                Margin="{StaticResource SettingFieldMargin}">
+                                            <local:SettingsFieldBox.FieldContent>
+                                                <TextBox x:Name="DraftRetryMaxAttemptsTextBox"
+                                                         PlaceholderText="0"
+                                                         LostFocus="DraftRetryMaxAttemptsTextBox_LostFocus" />
+                                            </local:SettingsFieldBox.FieldContent>
+                                        </local:SettingsFieldBox>
+
+                                        <local:SettingsFieldBox Label="Success Probe Interval (s)"
+                                                                FieldWidth="{StaticResource SettingFieldCompactWidth}"
+                                                                Margin="{StaticResource SettingFieldMargin}">
+                                            <local:SettingsFieldBox.FieldContent>
+                                                <TextBox x:Name="DraftSuccessProbeIntervalTextBox"
+                                                         PlaceholderText="30"
+                                                         LostFocus="DraftSuccessProbeIntervalTextBox_LostFocus" />
+                                            </local:SettingsFieldBox.FieldContent>
+                                        </local:SettingsFieldBox>
+                                    </ItemsControl>
+                                </local:SettingsSectionCard.SectionContent>
+                            </local:SettingsSectionCard>
+
+                            <StackPanel Orientation="Horizontal"
+                                        Spacing="8">
+                                <Button x:Name="ReloadConfigurationButton"
+                                        Content="Get Active Config"
+                                        Click="ReloadConnectionsDraft_Click" />
+                                <Button x:Name="ApplyConfigurationButton"
+                                        Content="Apply Configuration"
+                                        Click="ApplyConnectionsDraft_Click" />
+                            </StackPanel>
+                        </StackPanel>
                     </StackPanel>
-                </StackPanel>
+                </ScrollViewer>
             </Border>
         </Grid>
 
-        <TextBlock x:Name="ConnectionsApplyStatusText"
+        <TextBlock Grid.Row="1"
+                   x:Name="ConnectionsApplyStatusText"
                    TextWrapping="WrapWholeWords"
                    Opacity="0.8" />
-    </StackPanel>
+    </Grid>
 </UserControl>

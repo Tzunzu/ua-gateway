@@ -74,7 +74,7 @@ Expected:
 
 Steps:
 
-1. Open Dashboard, Live Output, and Logs in sequence.
+1. Navigate via left `NavigationView` items: Dashboard, Live Output, and Logs in sequence.
 2. Trigger or observe live events.
 
 Expected:
@@ -102,6 +102,14 @@ Expected:
 - Scenario results: A/B/C/D/E/F = PASS/WARN/FAIL
 - Notes for WARN/FAIL:
 - Follow-up issue IDs:
+
+## Latest Run Record
+
+- Date/time: 2026-06-09
+- Build/test baseline used: `dotnet build UAGateway.sln` and `dotnet test UAGateway.sln` both green
+- Scenario results: A/B/C/D/E/F = Pending manual desktop validation
+- Notes for WARN/FAIL: Service and UI launch paths were verified after shell migration; the WinUI process needed a debugger-side desktop interaction loop to complete scenario execution, which is not available in this tool session. The startup crash in `SettingsPage` was fixed and revalidated.
+- Follow-up issue IDs: None yet
 
 ## Exit Rule
 

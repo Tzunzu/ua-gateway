@@ -2,6 +2,7 @@ using System.IO.Pipes;
 using System.Text.Json;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using UAGateway.Core.Configuration;
 using UAGateway.Core.Diagnostics;
 using UAGateway.Core.Ipc;
 
@@ -96,6 +97,10 @@ internal sealed class IpcControlServerHostedService : BackgroundService
                     await HandleGetSecurityBootstrapAsync(request, writer);
                     break;
 
+                case IpcMethodNames.ConnectionsApplyDraftConfig:
+                    await HandleApplyDraftConfigAsync(request, connectionLifecycleManager, writer);
+                    break;
+
                 default:
                     await WriteResponseAsync(
                         writer,
@@ -170,6 +175,71 @@ internal sealed class IpcControlServerHostedService : BackgroundService
                 ErrorCode: null,
                 Message: null,
                 Payload: payload));
+    }
+
+    private static async Task HandleApplyDraftConfigAsync(
+        IpcRequestEnvelope<JsonElement> request,
+        UpstreamConnectionLifecycleManager connectionLifecycleManager,
+        StreamWriter writer)
+    {
+        var applyRequest = request.Payload.Deserialize<IpcApplyDraftConfigRequest>(IpcJsonSerializer.Options);
+        if (applyRequest?.DraftDocument is null)
+        {
+            await WriteResponseAsync(
+                writer,
+                new IpcResponseEnvelope<IpcApplyDraftConfigResponse>(
+                    RequestId: request.RequestId,
+                    TimestampUtc: DateTimeOffset.UtcNow,
+                    Success: false,
+                    ErrorCode: IpcErrorCodes.InternalError,
+                    Message: "Invalid apply payload.",
+                    Payload: new IpcApplyDraftConfigResponse(
+                        CorrelationId: Guid.NewGuid().ToString("N"),
+                        Applied: false,
+                        Issues: [])));
+            return;
+        }
+
+        var correlationId = Guid.NewGuid().ToString("N");
+        var issues = UpstreamEndpointConfigurationValidator.Validate(applyRequest.DraftDocument)
+            .Select(issue => new IpcValidationIssue(
+                Code: "validation",
+                Target: issue.EndpointId,
+                Message: issue.Message))
+            .ToList();
+
+        if (issues.Count > 0)
+        {
+            await WriteResponseAsync(
+                writer,
+                new IpcResponseEnvelope<IpcApplyDraftConfigResponse>(
+                    RequestId: request.RequestId,
+                    TimestampUtc: DateTimeOffset.UtcNow,
+                    Success: true,
+                    ErrorCode: null,
+                    Message: "Validation failed.",
+                    Payload: new IpcApplyDraftConfigResponse(
+                        CorrelationId: correlationId,
+                        Applied: false,
+                        Issues: issues)));
+            return;
+        }
+
+        UpstreamEndpointConfigurationStore.Save(applyRequest.DraftDocument);
+        connectionLifecycleManager.ApplyConfiguration(applyRequest.DraftDocument);
+
+        await WriteResponseAsync(
+            writer,
+            new IpcResponseEnvelope<IpcApplyDraftConfigResponse>(
+                RequestId: request.RequestId,
+                TimestampUtc: DateTimeOffset.UtcNow,
+                Success: true,
+                ErrorCode: null,
+                Message: "Applied.",
+                Payload: new IpcApplyDraftConfigResponse(
+                    CorrelationId: correlationId,
+                    Applied: true,
+                    Issues: [])));
     }
 
     private static async Task HandleHandshakeAsync(IpcRequestEnvelope<JsonElement> request, StreamWriter writer)

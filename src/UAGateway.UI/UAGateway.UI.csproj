@@ -10,6 +10,7 @@
     <EnableMsixTooling>true</EnableMsixTooling>
     <RootNamespace>UAGateway.UI</RootNamespace>
     <Description>Windows-only WinUI 3 frontend for UA Gateway.</Description>
+    <ApplicationIcon>..\..\assets\brand\gateway-icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,5 +20,16 @@
 
   <ItemGroup>
     <ProjectReference Include="..\UAGateway.Core\UAGateway.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\assets\brand\gateway-icon.ico">
+      <Link>Assets\Brand\gateway-icon.ico</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\assets\brand\gateway-icon.svg">
+      <Link>Assets\Brand\gateway-icon.svg</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 </Project>

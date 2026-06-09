@@ -4,72 +4,205 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:local="using:UAGateway.UI.Controls"
     mc:Ignorable="d">
-    <StackPanel Padding="12"
-                Spacing="8">
-        <TextBlock Text="Server Settings"
-                   FontSize="20"
-                   FontWeight="SemiBold" />
-        <TextBlock Text="Configure the local OPC UA server endpoint used by downstream clients. Changes are saved immediately, but the service must restart before a new listener address is used."
-                   Opacity="0.8"
-                   TextWrapping="WrapWholeWords" />
+    <UserControl.Resources>
+        <x:Double x:Key="SettingFieldCompactWidth">190</x:Double>
+        <x:Double x:Key="SettingFieldStandardWidth">240</x:Double>
+        <x:Double x:Key="SettingFieldWideWidth">320</x:Double>
+        <Thickness x:Key="SettingFieldMargin">0,0,12,8</Thickness>
+        <x:Double x:Key="SettingComboMinWidth">170</x:Double>
+        <Style TargetType="ComboBox">
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+        </Style>
+    </UserControl.Resources>
+    <Grid Padding="12"
+          ColumnSpacing="12">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
 
-        <Border Padding="12"
-                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
-                BorderThickness="1"
-                CornerRadius="8">
-            <StackPanel Spacing="10">
-                <TextBlock Text="Local OPC UA listener"
-                           FontSize="18"
-                           FontWeight="SemiBold" />
+        <local:SettingsSectionCard Grid.Column="0"
+                                   Title="Local Listener"
+                                   VerticalAlignment="Stretch">
+            <local:SettingsSectionCard.SectionContent>
+                <Grid ColumnSpacing="12"
+                      RowSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
 
-                <TextBlock Text="Port"
-                           FontWeight="SemiBold" />
-                <TextBox x:Name="ServerPortTextBox"
-                         Header="TCP port"
-                         PlaceholderText="4840"
-                         TextChanged="ServerPortTextBox_TextChanged" />
+                    <local:SettingsFieldBox Grid.Row="0"
+                                            Grid.Column="0"
+                                            Label="Host"
+                                            FieldWidth="{StaticResource SettingFieldWideWidth}">
+                        <local:SettingsFieldBox.FieldContent>
+                            <TextBox x:Name="ServerHostTextBox"
+                                     PlaceholderText="localhost"
+                                     TextChanged="ServerHostTextBox_TextChanged" />
+                        </local:SettingsFieldBox.FieldContent>
+                    </local:SettingsFieldBox>
 
-                <TextBlock Text="Host"
-                           FontWeight="SemiBold" />
-                <TextBox x:Name="ServerHostTextBox"
-                         Header="Host or IP"
-                         PlaceholderText="localhost"
-                         TextChanged="ServerHostTextBox_TextChanged" />
+                    <local:SettingsFieldBox Grid.Row="0"
+                                            Grid.Column="1"
+                                            Label="Port"
+                                            FieldWidth="{StaticResource SettingFieldCompactWidth}">
+                        <local:SettingsFieldBox.FieldContent>
+                            <TextBox x:Name="ServerPortTextBox"
+                                     PlaceholderText="4840"
+                                     TextChanged="ServerPortTextBox_TextChanged" />
+                        </local:SettingsFieldBox.FieldContent>
+                    </local:SettingsFieldBox>
 
-                <TextBlock Text="Endpoint path"
-                           FontWeight="SemiBold" />
-                <TextBox x:Name="ServerEndpointPathTextBox"
-                         Header="Path"
-                         PlaceholderText="UAGateway"
-                         TextChanged="ServerEndpointPathTextBox_TextChanged" />
+                    <local:SettingsFieldBox Grid.Row="1"
+                                            Grid.Column="0"
+                                            Label="Endpoint Path"
+                                            FieldWidth="{StaticResource SettingFieldWideWidth}">
+                        <local:SettingsFieldBox.FieldContent>
+                            <TextBox x:Name="ServerEndpointPathTextBox"
+                                     PlaceholderText="UAGateway"
+                                     TextChanged="ServerEndpointPathTextBox_TextChanged" />
+                        </local:SettingsFieldBox.FieldContent>
+                    </local:SettingsFieldBox>
 
-                <TextBlock x:Name="ServerEndpointPreviewText"
-                           Opacity="0.8"
-                           TextWrapping="WrapWholeWords" />
+                    <local:SettingsFieldBox Grid.Row="1"
+                                            Grid.Column="1"
+                                            Label="Application Name"
+                                            FieldWidth="{StaticResource SettingFieldWideWidth}">
+                        <local:SettingsFieldBox.FieldContent>
+                            <TextBox x:Name="ServerApplicationNameTextBox"
+                                     PlaceholderText="UA Gateway"
+                                     TextChanged="ServerApplicationNameTextBox_TextChanged" />
+                        </local:SettingsFieldBox.FieldContent>
+                    </local:SettingsFieldBox>
 
-                <TextBlock x:Name="ServerSettingsFilePathText"
-                           Opacity="0.7"
-                           TextWrapping="WrapWholeWords" />
+                    <local:SettingsFieldBox Grid.Row="2"
+                                            Grid.Column="0"
+                                            Label="Product URI"
+                                            FieldWidth="{StaticResource SettingFieldWideWidth}">
+                        <local:SettingsFieldBox.FieldContent>
+                            <TextBox x:Name="ServerProductUriTextBox"
+                                     PlaceholderText="urn:uagateway:service"
+                                     TextChanged="ServerProductUriTextBox_TextChanged" />
+                        </local:SettingsFieldBox.FieldContent>
+                    </local:SettingsFieldBox>
+                </Grid>
+            </local:SettingsSectionCard.SectionContent>
+        </local:SettingsSectionCard>
 
-                <StackPanel Orientation="Horizontal"
-                            Spacing="8">
-                    <Button x:Name="ReloadServerSettingsButton"
-                            Content="Reload Configuration"
-                            Click="ReloadServerSettingsButton_Click" />
-                    <Button x:Name="RestoreServerSettingsDefaultsButton"
-                        Content="Restore Defaults"
-                        Click="RestoreServerSettingsDefaultsButton_Click" />
-                    <Button x:Name="ApplyServerSettingsButton"
-                            Content="Apply Configuration"
-                            Click="ApplyServerSettingsButton_Click" />
-                </StackPanel>
-            </StackPanel>
-        </Border>
+        <local:SettingsSectionCard Grid.Column="1"
+                                   Title="Security &amp; Actions"
+                                   VerticalAlignment="Stretch">
+            <local:SettingsSectionCard.SectionContent>
+                <Grid RowSpacing="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
 
-        <TextBlock x:Name="ServerSettingsStatusText"
-                   Opacity="0.8"
-                   TextWrapping="WrapWholeWords" />
-    </StackPanel>
+                    <ItemsControl Grid.Row="0">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapGrid Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+
+                        <local:SettingsFieldBox Label="Security Mode"
+                                                FieldWidth="{StaticResource SettingFieldStandardWidth}"
+                                                Margin="{StaticResource SettingFieldMargin}">
+                            <local:SettingsFieldBox.FieldContent>
+                                <ComboBox x:Name="ServerSecurityModeComboBox"
+                                          MinWidth="{StaticResource SettingComboMinWidth}">
+                                    <ComboBoxItem Content="None" />
+                                    <ComboBoxItem Content="Sign" />
+                                    <ComboBoxItem Content="SignAndEncrypt" />
+                                </ComboBox>
+                            </local:SettingsFieldBox.FieldContent>
+                        </local:SettingsFieldBox>
+
+                        <local:SettingsFieldBox Label="Security Policy"
+                                                FieldWidth="{StaticResource SettingFieldStandardWidth}"
+                                                Margin="{StaticResource SettingFieldMargin}">
+                            <local:SettingsFieldBox.FieldContent>
+                                <ComboBox x:Name="ServerSecurityPolicyComboBox"
+                                          MinWidth="{StaticResource SettingComboMinWidth}">
+                                    <ComboBoxItem Content="None" />
+                                    <ComboBoxItem Content="Basic128Rsa15" />
+                                    <ComboBoxItem Content="Basic256" />
+                                    <ComboBoxItem Content="Basic256Sha256" />
+                                    <ComboBoxItem Content="Aes128Sha256RsaOaep" />
+                                    <ComboBoxItem Content="Aes256Sha256RsaPss" />
+                                </ComboBox>
+                            </local:SettingsFieldBox.FieldContent>
+                        </local:SettingsFieldBox>
+                    </ItemsControl>
+
+                    <ItemsControl Grid.Row="1">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapGrid Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+
+                        <local:SettingsFieldBox Label="Allow Anonymous"
+                                                FieldWidth="{StaticResource SettingFieldCompactWidth}"
+                                                Margin="{StaticResource SettingFieldMargin}">
+                            <local:SettingsFieldBox.FieldContent>
+                                <ToggleSwitch x:Name="ServerAllowAnonymousToggle" />
+                            </local:SettingsFieldBox.FieldContent>
+                        </local:SettingsFieldBox>
+
+                        <local:SettingsFieldBox Label="Allow Username/Password"
+                                                FieldWidth="{StaticResource SettingFieldStandardWidth}"
+                                                Margin="{StaticResource SettingFieldMargin}">
+                            <local:SettingsFieldBox.FieldContent>
+                                <ToggleSwitch x:Name="ServerAllowUsernamePasswordToggle" />
+                            </local:SettingsFieldBox.FieldContent>
+                        </local:SettingsFieldBox>
+                    </ItemsControl>
+
+                    <TextBlock Grid.Row="2"
+                               x:Name="ServerEndpointPreviewText"
+                               Opacity="0.85"
+                               TextWrapping="WrapWholeWords" />
+
+                    <StackPanel Grid.Row="3"
+                                Spacing="8"
+                                VerticalAlignment="Bottom">
+                        <TextBlock x:Name="ServerSettingsFilePathText"
+                                   Opacity="0.7"
+                                   TextWrapping="WrapWholeWords" />
+
+                        <TextBlock x:Name="ServerSettingsStatusText"
+                                   Opacity="0.8"
+                                   TextWrapping="WrapWholeWords" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="4"
+                                Orientation="Horizontal"
+                                Spacing="8">
+                        <Button x:Name="ReloadServerSettingsButton"
+                                Content="Get Active Config"
+                                Click="ReloadServerSettingsButton_Click" />
+                        <Button x:Name="RestoreServerSettingsDefaultsButton"
+                                Content="Restore Defaults"
+                                Click="RestoreServerSettingsDefaultsButton_Click" />
+                        <Button x:Name="ApplyServerSettingsButton"
+                                Content="Apply Configuration"
+                                Click="ApplyServerSettingsButton_Click" />
+                    </StackPanel>
+                </Grid>
+            </local:SettingsSectionCard.SectionContent>
+        </local:SettingsSectionCard>
+    </Grid>
 </UserControl>

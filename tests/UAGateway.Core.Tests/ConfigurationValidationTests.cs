@@ -30,6 +30,224 @@ public sealed class ConfigurationValidationTests
     }
 
     [Fact]
+    public void UpstreamEndpointValidator_FlagsInvalidSecurityMode()
+    {
+        var document = new UpstreamEndpointConfigurationDocument
+        {
+            Endpoints =
+            [
+                new UpstreamEndpointConfiguration
+                {
+                    Id = "endpoint-1",
+                    DisplayName = "PLC-1",
+                    EndpointUrl = "opc.tcp://plc1:4840",
+                    Enabled = true,
+                    Security = new UpstreamEndpointSecuritySettings
+                    {
+                        SecurityMode = "InvalidMode",
+                        SecurityPolicy = "Basic256Sha256",
+                    },
+                },
+            ],
+        };
+
+        var issues = UpstreamEndpointConfigurationValidator.Validate(document);
+
+        Assert.Contains(issues, issue =>
+            issue.EndpointId == "endpoint-1" &&
+            issue.Message.Contains("Security mode", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void UpstreamEndpointValidator_RequiresCredentialId_ForUsernamePasswordMode()
+    {
+        var document = new UpstreamEndpointConfigurationDocument
+        {
+            Endpoints =
+            [
+                new UpstreamEndpointConfiguration
+                {
+                    Id = "endpoint-1",
+                    DisplayName = "PLC-1",
+                    EndpointUrl = "opc.tcp://plc1:4840",
+                    Enabled = true,
+                    Authentication = new UpstreamEndpointAuthenticationSettings
+                    {
+                        Mode = "UsernamePassword",
+                        CredentialId = string.Empty,
+                    },
+                },
+            ],
+        };
+
+        var issues = UpstreamEndpointConfigurationValidator.Validate(document);
+
+        Assert.Contains(issues, issue =>
+            issue.EndpointId == "endpoint-1" &&
+            issue.Message.Contains("Credential id", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void UpstreamEndpointValidator_FlagsRetryDelayBounds()
+    {
+        var document = new UpstreamEndpointConfigurationDocument
+        {
+            Endpoints =
+            [
+                new UpstreamEndpointConfiguration
+                {
+                    Id = "endpoint-1",
+                    DisplayName = "PLC-1",
+                    EndpointUrl = "opc.tcp://plc1:4840",
+                    Enabled = true,
+                    Retry = new UpstreamEndpointRetrySettings
+                    {
+                        Strategy = "Exponential",
+                        InitialDelaySeconds = 120,
+                        MaxDelaySeconds = 10,
+                        SuccessProbeIntervalSeconds = 30,
+                        MaxAttempts = 0,
+                        ReconnectOnFailure = true,
+                    },
+                },
+            ],
+        };
+
+        var issues = UpstreamEndpointConfigurationValidator.Validate(document);
+
+        Assert.Contains(issues, issue =>
+            issue.EndpointId == "endpoint-1" &&
+            issue.Message.Contains("greater than or equal", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void UpstreamEndpointValidator_FlagsInvalidSubscriptionPublishingInterval()
+    {
+        var document = new UpstreamEndpointConfigurationDocument
+        {
+            Endpoints =
+            [
+                new UpstreamEndpointConfiguration
+                {
+                    Id = "endpoint-1",
+                    DisplayName = "PLC-1",
+                    EndpointUrl = "opc.tcp://plc1:4840",
+                    Enabled = true,
+                    Subscription = new UpstreamEndpointSubscriptionSettings
+                    {
+                        PublishingIntervalMs = 10,
+                        SamplingIntervalMs = 1000,
+                        QueueSize = 100,
+                        MaxItemsPerSubscription = 500,
+                    },
+                },
+            ],
+        };
+
+        var issues = UpstreamEndpointConfigurationValidator.Validate(document);
+
+        Assert.Contains(issues, issue =>
+            issue.EndpointId == "endpoint-1" &&
+            issue.Message.Contains("Publishing interval", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void UpstreamEndpointValidator_FlagsInvalidMaxItemsPerSubscription()
+    {
+        var document = new UpstreamEndpointConfigurationDocument
+        {
+            Endpoints =
+            [
+                new UpstreamEndpointConfiguration
+                {
+                    Id = "endpoint-1",
+                    DisplayName = "PLC-1",
+                    EndpointUrl = "opc.tcp://plc1:4840",
+                    Enabled = true,
+                    Subscription = new UpstreamEndpointSubscriptionSettings
+                    {
+                        PublishingIntervalMs = 1000,
+                        SamplingIntervalMs = 1000,
+                        QueueSize = 100,
+                        MaxItemsPerSubscription = 0,
+                    },
+                },
+            ],
+        };
+
+        var issues = UpstreamEndpointConfigurationValidator.Validate(document);
+
+        Assert.Contains(issues, issue =>
+            issue.EndpointId == "endpoint-1" &&
+            issue.Message.Contains("Max items per subscription", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void UpstreamEndpointValidator_FlagsInvalidLifetimeToKeepAliveRatio()
+    {
+        var document = new UpstreamEndpointConfigurationDocument
+        {
+            Endpoints =
+            [
+                new UpstreamEndpointConfiguration
+                {
+                    Id = "endpoint-1",
+                    DisplayName = "PLC-1",
+                    EndpointUrl = "opc.tcp://plc1:4840",
+                    Enabled = true,
+                    Subscription = new UpstreamEndpointSubscriptionSettings
+                    {
+                        PublishingIntervalMs = 1000,
+                        SamplingIntervalMs = 1000,
+                        QueueSize = 100,
+                        MaxItemsPerSubscription = 500,
+                        KeepAliveCount = 20,
+                        LifetimeCount = 40,
+                    },
+                },
+            ],
+        };
+
+        var issues = UpstreamEndpointConfigurationValidator.Validate(document);
+
+        Assert.Contains(issues, issue =>
+            issue.EndpointId == "endpoint-1" &&
+            issue.Message.Contains("3x keep alive", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void UpstreamEndpointValidator_FlagsInvalidSubscriptionPriority()
+    {
+        var document = new UpstreamEndpointConfigurationDocument
+        {
+            Endpoints =
+            [
+                new UpstreamEndpointConfiguration
+                {
+                    Id = "endpoint-1",
+                    DisplayName = "PLC-1",
+                    EndpointUrl = "opc.tcp://plc1:4840",
+                    Enabled = true,
+                    Subscription = new UpstreamEndpointSubscriptionSettings
+                    {
+                        PublishingIntervalMs = 1000,
+                        SamplingIntervalMs = 1000,
+                        QueueSize = 100,
+                        MaxItemsPerSubscription = 500,
+                        Priority = 999,
+                    },
+                },
+            ],
+        };
+
+        var issues = UpstreamEndpointConfigurationValidator.Validate(document);
+
+        Assert.Contains(issues, issue =>
+            issue.EndpointId == "endpoint-1" &&
+            issue.Message.Contains("priority", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public void NamespaceMappingValidator_FlagsUnknownEndpointId()
     {
         var endpoints = new UpstreamEndpointConfigurationDocument
@@ -308,6 +526,42 @@ public sealed class ConfigurationValidationTests
         Assert.Contains(issues, issue =>
             issue.Setting == nameof(LocalServerConfigurationDocument.EndpointPath) &&
             issue.Message.Contains("required", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void LocalServerConfigurationValidator_FlagsInvalidSecurityMode()
+    {
+        var document = new LocalServerConfigurationDocument
+        {
+            Host = "localhost",
+            Port = 4840,
+            EndpointPath = "UAGateway",
+            SecurityMode = "InvalidMode",
+        };
+
+        var issues = LocalServerConfigurationValidator.Validate(document);
+
+        Assert.Contains(issues, issue =>
+            issue.Setting == nameof(LocalServerConfigurationDocument.SecurityMode) &&
+            issue.Message.Contains("Security mode", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void LocalServerConfigurationValidator_FlagsMissingUserTokenPolicies()
+    {
+        var document = new LocalServerConfigurationDocument
+        {
+            Host = "localhost",
+            Port = 4840,
+            EndpointPath = "UAGateway",
+            AllowAnonymous = false,
+            AllowUsernamePassword = false,
+        };
+
+        var issues = LocalServerConfigurationValidator.Validate(document);
+
+        Assert.Contains(issues, issue =>
+            issue.Message.Contains("At least one user token policy", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

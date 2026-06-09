@@ -1,0 +1,11 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <TransitionCollection x:Key="ShellPageTransitions">
+        <NavigationThemeTransition />
+    </TransitionCollection>
+
+    <TransitionCollection x:Key="ShellStatusActionTransitions">
+        <EntranceThemeTransition FromHorizontalOffset="14" />
+    </TransitionCollection>
+</ResourceDictionary>

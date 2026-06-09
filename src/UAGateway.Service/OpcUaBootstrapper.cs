@@ -207,6 +207,10 @@ internal sealed class OpcUaBootstrapper
         var appDataRoot = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "UA Gateway");
         var pkiRoot = Path.Combine(appDataRoot, "pki");
         var localServerBaseAddress = localServerConfiguration.BuildBaseAddress();
+        var applicationName = string.IsNullOrWhiteSpace(localServerConfiguration.ApplicationName)
+            ? "UA Gateway"
+            : localServerConfiguration.ApplicationName.Trim();
+        var applicationNameSlug = applicationName.Replace(' ', '_');
 
         var ownStorePath = Path.Combine(pkiRoot, "own");
         var trustedStorePath = Path.Combine(pkiRoot, "trusted");
@@ -218,11 +222,15 @@ internal sealed class OpcUaBootstrapper
         Directory.CreateDirectory(issuerStorePath);
         Directory.CreateDirectory(rejectedStorePath);
 
+        var userTokenPolicies = BuildUserTokenPolicies(localServerConfiguration);
+
         return new ApplicationConfiguration
         {
-            ApplicationName = "UA Gateway",
-            ApplicationUri = $"urn:{hostName}:UAGateway:Service",
-            ProductUri = "urn:uagateway:service",
+            ApplicationName = applicationName,
+            ApplicationUri = $"urn:{hostName}:{applicationNameSlug}:Service",
+            ProductUri = string.IsNullOrWhiteSpace(localServerConfiguration.ProductUri)
+                ? "urn:uagateway:service"
+                : localServerConfiguration.ProductUri.Trim(),
             ApplicationType = ApplicationType.ClientAndServer,
             SecurityConfiguration = new SecurityConfiguration
             {
@@ -230,7 +238,7 @@ internal sealed class OpcUaBootstrapper
                 {
                     StoreType = CertificateStoreType.Directory,
                     StorePath = ownStorePath,
-                    SubjectName = $"CN=UA Gateway, DC={hostName}"
+                    SubjectName = $"CN={applicationName}, DC={hostName}"
                 },
                 TrustedPeerCertificates = new CertificateTrustList
                 {
@@ -277,18 +285,59 @@ internal sealed class OpcUaBootstrapper
                 {
                     new ServerSecurityPolicy
                     {
-                        SecurityMode = MessageSecurityMode.SignAndEncrypt,
-                        SecurityPolicyUri = SecurityPolicies.Basic256Sha256,
+                        SecurityMode = MapServerSecurityMode(localServerConfiguration.SecurityMode),
+                        SecurityPolicyUri = MapServerSecurityPolicyUri(localServerConfiguration.SecurityPolicy),
                     },
                 },
-                UserTokenPolicies = new UserTokenPolicyCollection
-                {
-                    new UserTokenPolicy(UserTokenType.Anonymous),
-                    new UserTokenPolicy(UserTokenType.UserName),
-                },
+                UserTokenPolicies = userTokenPolicies,
                 DiagnosticsEnabled = true,
             },
             DisableHiResClock = false,
+        };
+    }
+
+    private static UserTokenPolicyCollection BuildUserTokenPolicies(LocalServerConfigurationDocument config)
+    {
+        var policies = new UserTokenPolicyCollection();
+
+        if (config.AllowAnonymous)
+        {
+            policies.Add(new UserTokenPolicy(UserTokenType.Anonymous));
+        }
+
+        if (config.AllowUsernamePassword)
+        {
+            policies.Add(new UserTokenPolicy(UserTokenType.UserName));
+        }
+
+        if (policies.Count == 0)
+        {
+            policies.Add(new UserTokenPolicy(UserTokenType.Anonymous));
+        }
+
+        return policies;
+    }
+
+    private static MessageSecurityMode MapServerSecurityMode(string? mode)
+    {
+        return mode?.Trim() switch
+        {
+            "None" => MessageSecurityMode.None,
+            "Sign" => MessageSecurityMode.Sign,
+            _ => MessageSecurityMode.SignAndEncrypt,
+        };
+    }
+
+    private static string MapServerSecurityPolicyUri(string? policy)
+    {
+        return policy?.Trim() switch
+        {
+            "None" => SecurityPolicies.None,
+            "Basic128Rsa15" => SecurityPolicies.Basic128Rsa15,
+            "Basic256" => SecurityPolicies.Basic256,
+            "Aes128Sha256RsaOaep" => SecurityPolicies.Aes128_Sha256_RsaOaep,
+            "Aes256Sha256RsaPss" => SecurityPolicies.Aes256_Sha256_RsaPss,
+            _ => SecurityPolicies.Basic256Sha256,
         };
     }
 
